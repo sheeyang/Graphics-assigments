@@ -367,8 +367,8 @@ void createDemo1Thumbnail(cg::WindowManager &wm, GLFWwindow *parent, int x, int 
                                             // CursorposCallback - track mouse for flashlight effect
                                             [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
                                             {
-                                                demos[0].mouseX = xpos;
-                                                demos[0].mouseY = ypos;
+                                                demos[0].mouseX = static_cast<float>(xpos);
+                                                demos[0].mouseY = static_cast<float>(ypos);
                                                 pWindow->needUpdate = true;
                                             }});
 
@@ -640,8 +640,8 @@ void openFullWindow(cg::WindowManager &wm, int demoIndex)
                                    // CursorposCallback - track mouse for flashlight effect
                                    [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
                                    {
-                                       demos[0].mouseX = xpos;
-                                       demos[0].mouseY = ypos;
+                                       demos[0].mouseX = static_cast<float>(xpos);
+                                       demos[0].mouseY = static_cast<float>(ypos);
                                        pWindow->needUpdate = true;
                                    }});
     }
