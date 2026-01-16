@@ -248,8 +248,8 @@ void main()
         wallColor *= pattern;
         
         // Distance-based brightness (fog)
-        float brightness = 1.0 - (correctedDist / MAX_DIST) * 0.8;
-        brightness = clamp(brightness, 0.1, 1.0);
+        float brightness = 1.0 - (correctedDist / MAX_DIST) * 1.2;
+        brightness = clamp(brightness, 0.05, 1.0);
         wallColor *= brightness;
         
         // Add vertical shading for depth
