@@ -127,7 +127,7 @@ int main(int argc, char **argv)
         // Demo 1: tabIndex=0, mouseX=0, mouseY=0
         demos.push_back({"Assignment 1 - Tab Effects", 0, nullptr, nullptr, false, 0, 0, 0, 0, 0, 0, 0});
         // Demo 2: playerX=2.5, playerY=2.5, playerAngle=0
-        demos.push_back({"Assignment 2 - Ray Casting", 1, nullptr, nullptr, false, 2.5f, 2.5f, 0.0f, 0, 0, 0, 0});
+        demos.push_back({"Assignment 2 - Ray Casting", 1, nullptr, nullptr, false, 1.5f, 1.5f, 0.0f, 0, 0, 0, 0});
 
         GLFWwindow *pMainWindow = nullptr;
 
