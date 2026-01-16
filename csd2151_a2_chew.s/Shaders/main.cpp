@@ -99,7 +99,7 @@ int main(int argc, char **argv)
                                                  NONE,                        // Lights
                                                  DEFAULT,                     // Rendering target
                                                  {
-                                                     // Vertex and fragment shaders (menu background)
+        // Vertex and fragment shaders (menu background)
 #include "Shaders/Shader.vert.glsl"
                                                      ,
 #include "Shaders/ShaderMenu.frag.glsl"
@@ -183,7 +183,7 @@ Subwindows:
                                                         NONE,                   // Lights
                                                         DEFAULT,                // Rendering target
                                                         {
-                                                            // Shaders - Assignment 1 tabs
+        // Shaders - Assignment 1 tabs
 #include "Shaders/Shader.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA1.frag.glsl"
@@ -225,46 +225,31 @@ Subwindows:
                                                           return true;
                                                       },
 
-                                                      // MousebuttonCallback - handles tab clicks and double-click to detach
+                                                      // MousebuttonCallback - handles tab clicks (double-click to detach is handled by framework)
                                                       [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
                                                       {
                                                           if (button == GLFW_MOUSE_BUTTON_LEFT)
                                                           {
-                                                              double currentTime = glfwGetTime();
+                                                              // Single click - check for tab indicator clicks
+                                                              float centerX = pWindow->width / 2.0f;
+                                                              float y = pWindow->height - TAB_CIRCLE_Y_OFFSET;
 
-                                                              // Check for double-click
-                                                              if (currentTime - pWindow->context.input.lastClickTime < DOUBLE_CLICK_TIME)
+                                                              for (int i = 0; i < NUM_TABS; i++)
                                                               {
-                                                                  // Double-click detected - create detached window
-                                                                  std::cout << "Double-click detected on Assignment 1 subwindow - Opening in new window" << std::endl;
-                                                                  auto &windowManager = cg::WindowManager::getInstance();
-                                                                  createDetachedWindow(windowManager, 0, pWindow->pParentWindow);
-                                                              }
-                                                              else
-                                                              {
-                                                                  // Single click - check for tab indicator clicks
-                                                                  float centerX = pWindow->width / 2.0f;
-                                                                  float y = pWindow->height - TAB_CIRCLE_Y_OFFSET;
+                                                                  float tabX = centerX + (float(i) - 1.0f) * TAB_CIRCLE_SPACING;
+                                                                  float tabY = y;
 
-                                                                  for (int i = 0; i < NUM_TABS; i++)
+                                                                  float dx = xpos - tabX;
+                                                                  float dy = ypos - tabY;
+                                                                  float dist = sqrt(dx * dx + dy * dy);
+
+                                                                  if (dist <= TAB_CIRCLE_RADIUS + 5.0f)
                                                                   {
-                                                                      float tabX = centerX + (float(i) - 1.0f) * TAB_CIRCLE_SPACING;
-                                                                      float tabY = y;
-
-                                                                      float dx = xpos - tabX;
-                                                                      float dy = ypos - tabY;
-                                                                      float dist = sqrt(dx * dx + dy * dy);
-
-                                                                      if (dist <= TAB_CIRCLE_RADIUS + 5.0f)
-                                                                      {
-                                                                          pWindow->context.intparam[0] = i;
-                                                                          std::cout << "Mouse clicked on Tab " << (i + 1) << std::endl;
-                                                                          break;
-                                                                      }
+                                                                      pWindow->context.intparam[0] = i;
+                                                                      std::cout << "Mouse clicked on Tab " << (i + 1) << std::endl;
+                                                                      break;
                                                                   }
                                                               }
-
-                                                              pWindow->context.input.lastClickTime = currentTime;
                                                           }
                                                       },
 
@@ -298,7 +283,7 @@ Subwindows:
                                                         NONE,                       // Lights
                                                         DEFAULT,                    // Rendering target
                                                         {
-                                                            // Shaders - Assignment 2 ray casting
+        // Shaders - Assignment 2 ray casting
 #include "Shaders/Shader.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA2.frag.glsl"
@@ -365,22 +350,10 @@ Subwindows:
                                                           return true;
                                                       },
 
-                                                      // MousebuttonCallback - double-click to detach
+                                                      // MousebuttonCallback - double-click to detach is handled by framework
                                                       [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
                                                       {
-                                                          if (button == GLFW_MOUSE_BUTTON_LEFT)
-                                                          {
-                                                              double currentTime = glfwGetTime();
-
-                                                              if (currentTime - pWindow->context.input.lastClickTime < DOUBLE_CLICK_TIME)
-                                                              {
-                                                                  std::cout << "Double-click detected on Assignment 2 subwindow - Opening in new window" << std::endl;
-                                                                  auto &windowManager = cg::WindowManager::getInstance();
-                                                                  createDetachedWindow(windowManager, 1, pWindow->pParentWindow);
-                                                              }
-
-                                                              pWindow->context.input.lastClickTime = currentTime;
-                                                          }
+                                                          // Single clicks can be handled here if needed
                                                       },
 
                                                       // ScrollCallback
