@@ -45,7 +45,7 @@ const float TAB_CIRCLE_SPACING = 40.0f;
 const double DOUBLE_CLICK_TIME = 0.3;
 
 // ============================================================================
-// Map data for collision detection (must match shader)
+// Map data for collision detection and shader (passed to GPU)
 // ============================================================================
 const int MAP_SIZE = 9;
 const int MAP[MAP_SIZE * MAP_SIZE] = {
@@ -347,6 +347,13 @@ Subwindows:
                                                               // Pass camera position and direction
                                                               pWindow->passes[0].renderShader.setUniform("iCameraPos", pWindow->context.vec2param[0]);
                                                               pWindow->passes[0].renderShader.setUniform("iCameraDir", pWindow->context.floatparam[0]);
+                                                              // Pass map data from CPU to GPU
+                                                              pWindow->passes[0].renderShader.setUniform("iMapSize", MAP_SIZE);
+                                                              for (int i = 0; i < MAP_SIZE * MAP_SIZE; i++)
+                                                              {
+                                                                  std::string uniformName = "iMap[" + std::to_string(i) + "]";
+                                                                  pWindow->passes[0].renderShader.setUniform(uniformName, MAP[i]);
+                                                              }
                                                           }
                                                       },
 
@@ -646,6 +653,13 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  pWindow->passes[0].renderShader.use();
                                                                  pWindow->passes[0].renderShader.setUniform("iCameraPos", pWindow->context.vec2param[0]);
                                                                  pWindow->passes[0].renderShader.setUniform("iCameraDir", pWindow->context.floatparam[0]);
+                                                                 // Pass map data from CPU to GPU
+                                                                 pWindow->passes[0].renderShader.setUniform("iMapSize", MAP_SIZE);
+                                                                 for (int i = 0; i < MAP_SIZE * MAP_SIZE; i++)
+                                                                 {
+                                                                     std::string uniformName = "iMap[" + std::to_string(i) + "]";
+                                                                     pWindow->passes[0].renderShader.setUniform(uniformName, MAP[i]);
+                                                                 }
                                                              }
                                                          },
 

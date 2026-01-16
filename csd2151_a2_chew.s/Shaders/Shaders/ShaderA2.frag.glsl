@@ -20,6 +20,8 @@ uniform vec2 iResolution;   // Viewport resolution (in pixels)
 uniform float iTime;        // Time in seconds
 uniform vec2 iCameraPos;    // Camera position in map space
 uniform float iCameraDir;   // Camera direction angle in radians
+uniform int iMap[81];       // Map data passed from CPU (9x9 = 81)
+uniform int iMapSize;       // Map size (9)
 
 layout(location=0) out vec4 FragColor;
 
@@ -27,27 +29,13 @@ layout(location=0) out vec4 FragColor;
 const float PI = 3.14159265359;
 const float FOV = PI / 3.0;  // 60 degree field of view
 const float MAX_DIST = 20.0;
-const int MAP_SIZE = 9;
-
-// Map data: 0 = empty, 1-4 = different wall types
-const int MAP[MAP_SIZE * MAP_SIZE] = int[](
-    1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 2, 2, 0, 3, 3, 0, 1,
-    1, 0, 2, 0, 0, 0, 3, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 4, 0, 0, 0, 2, 0, 1,
-    1, 0, 4, 4, 0, 2, 2, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1
-);
 
 // Get map value at position
 int getMap(int x, int y)
 {
-    if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE)
+    if (x < 0 || x >= iMapSize || y < 0 || y >= iMapSize)
         return 1; // Treat out of bounds as wall
-    return MAP[y * MAP_SIZE + x];
+    return iMap[y * iMapSize + x];
 }
 
 // Get wall color based on wall ID
