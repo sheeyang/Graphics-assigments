@@ -44,6 +44,46 @@ const float TAB_CIRCLE_SPACING = 40.0f;
 // Double-click detection threshold (in seconds)
 const double DOUBLE_CLICK_TIME = 0.3;
 
+// ============================================================================
+// Map data for collision detection (must match shader)
+// ============================================================================
+const int MAP_SIZE = 9;
+const int MAP[MAP_SIZE * MAP_SIZE] = {
+    1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 2, 2, 0, 3, 3, 0, 1,
+    1, 0, 2, 0, 0, 0, 3, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 4, 0, 0, 0, 2, 0, 1,
+    1, 0, 4, 4, 0, 2, 2, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+// Collision detection margin (distance from wall)
+const float COLLISION_MARGIN = 0.2f;
+
+// Check if a position is inside a wall
+bool isWall(float x, float y)
+{
+    int mapX = static_cast<int>(x);
+    int mapY = static_cast<int>(y);
+
+    if (mapX < 0 || mapX >= MAP_SIZE || mapY < 0 || mapY >= MAP_SIZE)
+        return true; // Out of bounds is treated as wall
+
+    return MAP[mapY * MAP_SIZE + mapX] > 0;
+}
+
+// Check if a position with margin is valid (not colliding with walls)
+bool canMoveTo(float x, float y)
+{
+    // Check all corners of a small box around the position
+    return !isWall(x - COLLISION_MARGIN, y - COLLISION_MARGIN) &&
+           !isWall(x + COLLISION_MARGIN, y - COLLISION_MARGIN) &&
+           !isWall(x - COLLISION_MARGIN, y + COLLISION_MARGIN) &&
+           !isWall(x + COLLISION_MARGIN, y + COLLISION_MARGIN);
+}
+
 // Global storage for child windows and their detached states
 std::vector<GLFWwindow *> subwindows;
 std::vector<GLFWwindow *> detachedWindows;
@@ -313,38 +353,91 @@ Subwindows:
                                                       // SizeCallback
                                                       [](cg::ManagedWindow *pWindow, int width, int height) {},
 
-                                                      // KeyCallback - WASD movement
+                                                      // KeyCallback - WASD movement with collision detection
                                                       [](cg::ManagedWindow *pWindow, int key)
                                                       {
                                                           float moveSpeed = 0.1f;
                                                           float dir = pWindow->context.floatparam[0];
+                                                          float currentX = pWindow->context.vec2param[0].x;
+                                                          float currentY = pWindow->context.vec2param[0].y;
+                                                          float newX = currentX;
+                                                          float newY = currentY;
 
                                                           if (key == GLFW_KEY_W)
                                                           {
-                                                              pWindow->context.vec2param[0].x += cos(dir) * moveSpeed;
-                                                              pWindow->context.vec2param[0].y += sin(dir) * moveSpeed;
-                                                              std::cout << "Moving forward" << std::endl;
+                                                              newX = currentX + cos(dir) * moveSpeed;
+                                                              newY = currentY + sin(dir) * moveSpeed;
+                                                              // Try to move, with wall sliding
+                                                              if (canMoveTo(newX, newY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].x = newX;
+                                                                  pWindow->context.vec2param[0].y = newY;
+                                                              }
+                                                              else if (canMoveTo(newX, currentY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].x = newX;
+                                                              }
+                                                              else if (canMoveTo(currentX, newY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].y = newY;
+                                                              }
                                                               return false;
                                                           }
                                                           if (key == GLFW_KEY_S)
                                                           {
-                                                              pWindow->context.vec2param[0].x -= cos(dir) * moveSpeed;
-                                                              pWindow->context.vec2param[0].y -= sin(dir) * moveSpeed;
-                                                              std::cout << "Moving backward" << std::endl;
+                                                              newX = currentX - cos(dir) * moveSpeed;
+                                                              newY = currentY - sin(dir) * moveSpeed;
+                                                              if (canMoveTo(newX, newY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].x = newX;
+                                                                  pWindow->context.vec2param[0].y = newY;
+                                                              }
+                                                              else if (canMoveTo(newX, currentY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].x = newX;
+                                                              }
+                                                              else if (canMoveTo(currentX, newY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].y = newY;
+                                                              }
                                                               return false;
                                                           }
                                                           if (key == GLFW_KEY_A)
                                                           {
-                                                              pWindow->context.vec2param[0].x += sin(dir) * moveSpeed;
-                                                              pWindow->context.vec2param[0].y -= cos(dir) * moveSpeed;
-                                                              std::cout << "Strafing left" << std::endl;
+                                                              newX = currentX + sin(dir) * moveSpeed;
+                                                              newY = currentY - cos(dir) * moveSpeed;
+                                                              if (canMoveTo(newX, newY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].x = newX;
+                                                                  pWindow->context.vec2param[0].y = newY;
+                                                              }
+                                                              else if (canMoveTo(newX, currentY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].x = newX;
+                                                              }
+                                                              else if (canMoveTo(currentX, newY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].y = newY;
+                                                              }
                                                               return false;
                                                           }
                                                           if (key == GLFW_KEY_D)
                                                           {
-                                                              pWindow->context.vec2param[0].x -= sin(dir) * moveSpeed;
-                                                              pWindow->context.vec2param[0].y += cos(dir) * moveSpeed;
-                                                              std::cout << "Strafing right" << std::endl;
+                                                              newX = currentX - sin(dir) * moveSpeed;
+                                                              newY = currentY + cos(dir) * moveSpeed;
+                                                              if (canMoveTo(newX, newY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].x = newX;
+                                                                  pWindow->context.vec2param[0].y = newY;
+                                                              }
+                                                              else if (canMoveTo(newX, currentY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].x = newX;
+                                                              }
+                                                              else if (canMoveTo(currentX, newY))
+                                                              {
+                                                                  pWindow->context.vec2param[0].y = newY;
+                                                              }
                                                               return false;
                                                           }
                                                           return true;
@@ -559,34 +652,90 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          // SizeCallback
                                                          [](cg::ManagedWindow *pWindow, int width, int height) {},
 
-                                                         // KeyCallback
+                                                         // KeyCallback - WASD movement with collision detection
                                                          [](cg::ManagedWindow *pWindow, int key)
                                                          {
                                                              float moveSpeed = 0.1f;
                                                              float dir = pWindow->context.floatparam[0];
+                                                             float currentX = pWindow->context.vec2param[0].x;
+                                                             float currentY = pWindow->context.vec2param[0].y;
+                                                             float newX = currentX;
+                                                             float newY = currentY;
 
                                                              if (key == GLFW_KEY_W)
                                                              {
-                                                                 pWindow->context.vec2param[0].x += cos(dir) * moveSpeed;
-                                                                 pWindow->context.vec2param[0].y += sin(dir) * moveSpeed;
+                                                                 newX = currentX + cos(dir) * moveSpeed;
+                                                                 newY = currentY + sin(dir) * moveSpeed;
+                                                                 if (canMoveTo(newX, newY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].x = newX;
+                                                                     pWindow->context.vec2param[0].y = newY;
+                                                                 }
+                                                                 else if (canMoveTo(newX, currentY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].x = newX;
+                                                                 }
+                                                                 else if (canMoveTo(currentX, newY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].y = newY;
+                                                                 }
                                                                  return false;
                                                              }
                                                              if (key == GLFW_KEY_S)
                                                              {
-                                                                 pWindow->context.vec2param[0].x -= cos(dir) * moveSpeed;
-                                                                 pWindow->context.vec2param[0].y -= sin(dir) * moveSpeed;
+                                                                 newX = currentX - cos(dir) * moveSpeed;
+                                                                 newY = currentY - sin(dir) * moveSpeed;
+                                                                 if (canMoveTo(newX, newY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].x = newX;
+                                                                     pWindow->context.vec2param[0].y = newY;
+                                                                 }
+                                                                 else if (canMoveTo(newX, currentY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].x = newX;
+                                                                 }
+                                                                 else if (canMoveTo(currentX, newY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].y = newY;
+                                                                 }
                                                                  return false;
                                                              }
                                                              if (key == GLFW_KEY_A)
                                                              {
-                                                                 pWindow->context.vec2param[0].x += sin(dir) * moveSpeed;
-                                                                 pWindow->context.vec2param[0].y -= cos(dir) * moveSpeed;
+                                                                 newX = currentX + sin(dir) * moveSpeed;
+                                                                 newY = currentY - cos(dir) * moveSpeed;
+                                                                 if (canMoveTo(newX, newY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].x = newX;
+                                                                     pWindow->context.vec2param[0].y = newY;
+                                                                 }
+                                                                 else if (canMoveTo(newX, currentY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].x = newX;
+                                                                 }
+                                                                 else if (canMoveTo(currentX, newY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].y = newY;
+                                                                 }
                                                                  return false;
                                                              }
                                                              if (key == GLFW_KEY_D)
                                                              {
-                                                                 pWindow->context.vec2param[0].x -= sin(dir) * moveSpeed;
-                                                                 pWindow->context.vec2param[0].y += cos(dir) * moveSpeed;
+                                                                 newX = currentX - sin(dir) * moveSpeed;
+                                                                 newY = currentY + cos(dir) * moveSpeed;
+                                                                 if (canMoveTo(newX, newY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].x = newX;
+                                                                     pWindow->context.vec2param[0].y = newY;
+                                                                 }
+                                                                 else if (canMoveTo(newX, currentY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].x = newX;
+                                                                 }
+                                                                 else if (canMoveTo(currentX, newY))
+                                                                 {
+                                                                     pWindow->context.vec2param[0].y = newY;
+                                                                 }
                                                                  return false;
                                                              }
                                                              return true;
