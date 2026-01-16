@@ -34,6 +34,7 @@ uniform vec2 iResolution;               // Screen resolution in pixels
 uniform float TabIndex;                 // Active visual tab index (0, 1, 2)
 uniform vec2 Mouse;                     // Mouse position in screen coordinates
 uniform float Time;                     // Elapsed time in seconds
+uniform float ShowButtons;              // Whether to show tab buttons (1.0 = show, 0.0 = hide)
 
 layout(location=0) out vec4 FragColor;
 
@@ -106,25 +107,6 @@ vec4 applyPointLight(vec4 bgInfo, vec2 fragCoord, vec2 mousePos) {
     return vec4(finalRGB, bgInfo.a);
 }
 
-// 4. Tab 0 Background (for Ray Casting demo)
-/**
- * @brief Creates a dark atmospheric background for the ray casting demo.
- * @param uv Normalized screen coordinates.
- * @return RGBA background color.
- */
-vec4 rayCastBackground(vec2 uv) {
-    // Dark gradient background
-    vec3 topColor = vec3(0.05, 0.05, 0.1);
-    vec3 bottomColor = vec3(0.02, 0.02, 0.05);
-    vec3 color = mix(bottomColor, topColor, uv.y);
-    
-    // Subtle animated noise for atmosphere
-    float noise = sin(uv.x * 50.0 + Time) * sin(uv.y * 50.0 + Time * 0.7) * 0.02;
-    color += noise;
-    
-    return vec4(color, 1.0);
-}
-
 // --- BUTTONS (Transparent White/Grey) ---
 /**
  * @brief Draws interactive circular UI buttons.
@@ -179,11 +161,16 @@ void main()
         sceneColor = applyPointLight(board, gl_FragCoord.xy, Mouse);
     } 
     else {
-        // Tab 0: Ray Casting Demo background
-        vec2 uv = gl_FragCoord.xy / iResolution.xy;
-        sceneColor = rayCastBackground(uv);
+        // Tab 0: Diagonal Moving Checkerboard
+        vec2 movingUV = responsiveUV + vec2(Time * 0.05, Time * 0.05);
+        sceneColor = checkerboard(movingUV, 10.0);
     }
     
-    FragColor = drawButtons(gl_FragCoord.xy, sceneColor);
+    // Only draw buttons if ShowButtons is enabled
+    if (ShowButtons > 0.5) {
+        FragColor = drawButtons(gl_FragCoord.xy, sceneColor);
+    } else {
+        FragColor = sceneColor;
+    }
 }
 )"

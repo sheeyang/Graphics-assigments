@@ -149,7 +149,7 @@ int main(int argc, char **argv)
                                                  {
 #include "Shaders/Shader.vert.glsl"
                                                      ,
-#include "Shaders/Menu.frag.glsl"
+#include "Shaders/Shader.frag.glsl"
                                                  }}},
 
                                                // FocusCallback
@@ -181,6 +181,7 @@ Available Demos:
                                                    auto &program = pWindow->passes[0].renderShader;
                                                    program.use();
                                                    program.setUniform("Time", (float)glfwGetTime());
+                                                   program.setUniform("ShowButtons", 0.0f); // Disable tab buttons in menu
                                                },
 
                                                // SizeCallback
@@ -262,7 +263,7 @@ void createDemo1Thumbnail(cg::WindowManager &wm, GLFWwindow *parent, int x, int 
                                               {
 #include "Shaders/Shader.vert.glsl"
                                                   ,
-#include "Shaders/Demo1.frag.glsl"
+#include "Shaders/Shader.frag.glsl"
                                               }}},
 
                                             // FocusCallback
@@ -283,6 +284,7 @@ void createDemo1Thumbnail(cg::WindowManager &wm, GLFWwindow *parent, int x, int 
                                                 program.use();
                                                 program.setUniform("Time", (float)glfwGetTime());
                                                 program.setUniform("TabIndex", (float)demos[0].tabIndex);
+                                                program.setUniform("ShowButtons", 1.0f); // Enable tab buttons
                                                 // Flip Y coordinate: GLFW uses top-left origin, OpenGL uses bottom-left
                                                 float mouseY_flipped = (float)pWindow->height - (float)demos[0].mouseY;
                                                 program.setUniform("Mouse", glm::vec2((float)demos[0].mouseX, mouseY_flipped));
@@ -559,7 +561,7 @@ void openFullWindow(cg::WindowManager &wm, int demoIndex)
                                      {
 #include "Shaders/Shader.vert.glsl"
                                          ,
-#include "Shaders/Demo1.frag.glsl"
+#include "Shaders/Shader.frag.glsl"
                                      }}},
 
                                    [](cg::ManagedWindow *pWindow, int focused)
@@ -577,6 +579,7 @@ void openFullWindow(cg::WindowManager &wm, int demoIndex)
                                        program.use();
                                        program.setUniform("Time", (float)glfwGetTime());
                                        program.setUniform("TabIndex", (float)demos[0].tabIndex);
+                                       program.setUniform("ShowButtons", 1.0f); // Enable tab buttons
                                        // Flip Y coordinate: GLFW uses top-left origin, OpenGL uses bottom-left
                                        float mouseY_flipped = (float)pWindow->height - (float)demos[0].mouseY;
                                        program.setUniform("Mouse", glm::vec2((float)demos[0].mouseX, mouseY_flipped));
