@@ -282,8 +282,10 @@ void createDemo1Thumbnail(cg::WindowManager &wm, GLFWwindow *parent, int x, int 
                                                 auto &program = pWindow->passes[0].renderShader;
                                                 program.use();
                                                 program.setUniform("Time", (float)glfwGetTime());
-                                                program.setUniform("TabIndex", demos[0].tabIndex);
-                                                program.setUniform("Mouse", glm::vec2((float)demos[0].mouseX, (float)demos[0].mouseY));
+                                                program.setUniform("TabIndex", (float)demos[0].tabIndex);
+                                                // Flip Y coordinate: GLFW uses top-left origin, OpenGL uses bottom-left
+                                                float mouseY_flipped = (float)pWindow->height - (float)demos[0].mouseY;
+                                                program.setUniform("Mouse", glm::vec2((float)demos[0].mouseX, mouseY_flipped));
                                             },
 
                                             // SizeCallback
@@ -300,6 +302,7 @@ void createDemo1Thumbnail(cg::WindowManager &wm, GLFWwindow *parent, int x, int 
                                                 {
                                                     demos[0].tabIndex = (demos[0].tabIndex + 1) % 3;
                                                     std::cout << "Demo 1 Tab switched to: " << demos[0].tabIndex << std::endl;
+                                                    pWindow->needUpdate = true;
                                                     return true;
                                                 }
                                                 return false;
@@ -311,17 +314,19 @@ void createDemo1Thumbnail(cg::WindowManager &wm, GLFWwindow *parent, int x, int 
                                                 if (button == GLFW_MOUSE_BUTTON_LEFT)
                                                 {
                                                     double currentTime = glfwGetTime();
-                                                    
+
                                                     // Check if clicking on tab buttons (3 circles at bottom)
                                                     float w = (float)pWindow->width;
                                                     float h = (float)pWindow->height;
-                                                    float buttonY = h - 25.0f; // Y position of buttons
+                                                    // Shader draws buttons at 0.1 * h from bottom (OpenGL coords)
+                                                    // In GLFW coords (top-left origin), this is 0.9 * h from top
+                                                    float buttonY = 0.9f * h;
                                                     float buttonRadius = 18.0f;
-                                                    
+
                                                     // Button positions: center - 50, center, center + 50
                                                     float centerX = w * 0.5f;
                                                     float buttonPositions[3] = {centerX - 50.0f, centerX, centerX + 50.0f};
-                                                    
+
                                                     for (int i = 0; i < 3; i++)
                                                     {
                                                         float dx = (float)xpos - buttonPositions[i];
@@ -330,10 +335,11 @@ void createDemo1Thumbnail(cg::WindowManager &wm, GLFWwindow *parent, int x, int 
                                                         {
                                                             demos[0].tabIndex = i;
                                                             std::cout << "Demo 1 Tab button " << i << " clicked" << std::endl;
+                                                            pWindow->needUpdate = true;
                                                             return; // Button was clicked, don't process double-click
                                                         }
                                                     }
-                                                    
+
                                                     // Check for double-click
                                                     if ((currentTime - demos[0].lastClickTime) < DOUBLE_CLICK_TIME)
                                                     {
@@ -361,6 +367,7 @@ void createDemo1Thumbnail(cg::WindowManager &wm, GLFWwindow *parent, int x, int 
                                             {
                                                 demos[0].mouseX = xpos;
                                                 demos[0].mouseY = ypos;
+                                                pWindow->needUpdate = true;
                                             }});
 
     demos[demoIdx].thumbnailWindow = thumbWindow;
@@ -569,8 +576,10 @@ void openFullWindow(cg::WindowManager &wm, int demoIndex)
                                        auto &program = pWindow->passes[0].renderShader;
                                        program.use();
                                        program.setUniform("Time", (float)glfwGetTime());
-                                       program.setUniform("TabIndex", demos[0].tabIndex);
-                                       program.setUniform("Mouse", glm::vec2((float)demos[0].mouseX, (float)demos[0].mouseY));
+                                       program.setUniform("TabIndex", (float)demos[0].tabIndex);
+                                       // Flip Y coordinate: GLFW uses top-left origin, OpenGL uses bottom-left
+                                       float mouseY_flipped = (float)pWindow->height - (float)demos[0].mouseY;
+                                       program.setUniform("Mouse", glm::vec2((float)demos[0].mouseX, mouseY_flipped));
                                    },
 
                                    [](cg::ManagedWindow *pWindow, int width, int height)
@@ -586,11 +595,12 @@ void openFullWindow(cg::WindowManager &wm, int demoIndex)
                                        {
                                            demos[0].tabIndex = (demos[0].tabIndex + 1) % 3;
                                            std::cout << "Demo 1 Tab switched to: " << demos[0].tabIndex << std::endl;
+                                           pWindow->needUpdate = true;
                                            return true;
                                        }
                                        return false;
                                    },
-                                   
+
                                    // MousebuttonCallback - check for tab button clicks
                                    [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
                                    {
@@ -599,12 +609,14 @@ void openFullWindow(cg::WindowManager &wm, int demoIndex)
                                            // Check if clicking on tab buttons
                                            float w = (float)pWindow->width;
                                            float h = (float)pWindow->height;
-                                           float buttonY = h - 25.0f;
+                                           // Shader draws buttons at 0.1 * h from bottom (OpenGL coords)
+                                           // In GLFW coords (top-left origin), this is 0.9 * h from top
+                                           float buttonY = 0.9f * h;
                                            float buttonRadius = 18.0f;
-                                           
+
                                            float centerX = w * 0.5f;
                                            float buttonPositions[3] = {centerX - 50.0f, centerX, centerX + 50.0f};
-                                           
+
                                            for (int i = 0; i < 3; i++)
                                            {
                                                float dx = (float)xpos - buttonPositions[i];
@@ -613,19 +625,21 @@ void openFullWindow(cg::WindowManager &wm, int demoIndex)
                                                {
                                                    demos[0].tabIndex = i;
                                                    std::cout << "Demo 1 Tab button " << i << " clicked" << std::endl;
+                                                   pWindow->needUpdate = true;
                                                    return;
                                                }
                                            }
                                        }
                                    },
-                                   
+
                                    [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods) {},
-                                   
+
                                    // CursorposCallback - track mouse for flashlight effect
                                    [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
                                    {
                                        demos[0].mouseX = xpos;
                                        demos[0].mouseY = ypos;
+                                       pWindow->needUpdate = true;
                                    }});
     }
     else if (demoIndex == 1)
