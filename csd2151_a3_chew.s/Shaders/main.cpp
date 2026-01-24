@@ -10,7 +10,7 @@
     system with subwindows that can be opened in separate windows on double-click.
 
     Features:
-    - Main window with 4x4 grid layout for subwindows
+    - Main window with 4x3 grid layout for subwindows (up to 12)
     - Subwindow 1: Assignment 1 (Tabs) demo
     - Subwindow 2: Assignment 2 (Ray Casting) demo
     - Double-click on subwindow to open in new actual window
@@ -28,8 +28,10 @@
 
 const int NOMARGIN = 0; // To set no margin for a window
 
-// Grid configuration for menu (4x4 max)
-const int GRID_SIZE = 4;
+// Grid configuration for menu (4 columns x 3 rows = 12 max)
+const int GRID_COLS = 4;
+const int GRID_ROWS = 3;
+const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 12 subwindows max
 const int GRID_GAP = 10;
 
 // Number of active subwindows
