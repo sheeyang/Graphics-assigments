@@ -29,7 +29,7 @@ const float FOV = 60.0;                        // Field of view in degrees
 
 // Object parameters
 const vec3 EARTH_CENTER = vec3(0.0, 0.0, 0.0);
-const float EARTH_RADIUS = 1.0;
+const float EARTH_RADIUS = 0.6;
 const vec3 EARTH_COLOR = vec3(0.2, 0.5, 0.8);  // Blue-ish Earth
 
 const float MOON_RADIUS = 0.25;
@@ -44,7 +44,7 @@ const vec3 SUN_COLOR = vec3(1.0, 0.9, 0.5);    // Yellow Sun
 const vec3 SUN_LIGHT_INTENSITY = vec3(1.0, 0.95, 0.8);
 
 // Ambient light
-const vec3 AMBIENT_LIGHT = vec3(0.1, 0.1, 0.1);
+const vec3 AMBIENT_LIGHT = vec3(0.002, 0.002, 0.002);
 
 // ============================================
 // Ray-Sphere Intersection
@@ -90,7 +90,7 @@ float intersectSphere(vec3 rayOrigin, vec3 rayDir, vec3 sphereCenter, float sphe
 // ============================================
 vec3 getSunPosition()
 {
-    float angle = iTime * SUN_ORBIT_SPEED;
+    float angle = iTime * SUN_ORBIT_SPEED + PI;  // Start behind Earth on the left
     return vec3(
         SUN_ORBIT_RADIUS * cos(angle),
         0.5 * sin(angle * 0.7),  // Slight vertical oscillation
@@ -136,16 +136,8 @@ vec3 trace(vec3 rayOrigin, vec3 rayDir)
     vec3 sunPos = getSunPosition();
     vec3 moonPos = getMoonPosition();
     
-    // Background color (space - dark with stars)
-    vec3 backgroundColor = vec3(0.02, 0.02, 0.05);
-    
-    // Add some stars to background
-    vec2 uv = gl_FragCoord.xy / iResolution.xy;
-    float starField = fract(sin(dot(floor(uv * 500.0), vec2(12.9898, 78.233))) * 43758.5453);
-    if (starField > 0.998)
-    {
-        backgroundColor += vec3(0.5, 0.5, 0.6) * (starField - 0.998) * 500.0;
-    }
+    // Background color (space - black with stars)
+    vec3 backgroundColor = vec3(0.0, 0.0, 0.0);
     
     // Track closest intersection
     float closestT = 1e10;
