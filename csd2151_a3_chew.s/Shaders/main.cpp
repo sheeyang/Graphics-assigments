@@ -35,7 +35,7 @@ const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 12 subwindows max
 const int GRID_GAP = 10;
 
 // Number of active subwindows
-const int NUM_SUBWINDOWS = 2;
+const int NUM_SUBWINDOWS = 3;
 
 // Tab indicator constants (from Assignment 1)
 const int NUM_TABS = 3;
@@ -171,6 +171,7 @@ Controls:
 Subwindows:
    - Subwindow 1: Assignment 1 (Tabs) - Animated visual effects
    - Subwindow 2: Assignment 2 (Ray Casting) - First-person environment
+   - Subwindow 3: Assignment 3 (Ray Tracing) - Earth, Sun, Moon system
 )";
                                                    }
                                                },
@@ -469,6 +470,81 @@ Subwindows:
                                                               float rotSpeed = 0.01f;
                                                               pWindow->context.floatparam[0] += static_cast<float>(xoffset) * rotSpeed;
                                                           }
+                                                      }},
+                                                     pMainWindow));
+
+        // ====================================================================
+        // SUBWINDOW 3: Assignment 3 (Ray Tracing)
+        // ====================================================================
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,             // State
+                                                      pMainWindow,                 // Parent window
+                                                      {2, GRID_SIZE, GRID_GAP},    // Grid position: element 2 in grid
+                                                      "Assignment 3 - Ray Tracing", // Title
+                                                      NONE,                        // Background color
+                                                      NONE,                        // Textures
+                                                      NONE,                        // Compute shader
+                                                      {                            // Rendering passes
+                                                       {                           // Pass 0
+                                                        {NOMARGIN},                // Viewport
+                                                        NONE,                      // Background color
+                                                        DISABLE,                   // Depth test
+                                                        {{QUAD}},                  // Objects
+                                                        NONE,                      // Cameras
+                                                        NONE,                      // Lights
+                                                        DEFAULT,                   // Rendering target
+                                                        {
+        // Shaders - Assignment 3 ray tracing
+#include "Shaders/Shader.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA3.frag.glsl"
+                                                        }}},
+
+                                                      // FocusCallback
+                                                      [](cg::ManagedWindow *pWindow, int focused)
+                                                      {
+                                                          if (focused)
+                                                          {
+                                                              std::cout << "Subwindow 3 (Assignment 3 - Ray Tracing) focused" << std::endl;
+                                                              std::cout << "Ray Tracing Demo: Earth, Sun, and Moon system" << std::endl;
+                                                              std::cout << "- Earth: Stationary at center" << std::endl;
+                                                              std::cout << "- Sun: Orbiting light source (yellow)" << std::endl;
+                                                              std::cout << "- Moon: Orbiting satellite (gray)" << std::endl;
+                                                              std::cout << "- Shading: Lambert (ambient + diffuse)" << std::endl;
+                                                          }
+                                                      },
+
+                                                      // InitCallback
+                                                      [](cg::ManagedWindow *pWindow, int pass)
+                                                      {
+                                                          if (pass == 0)
+                                                          {
+                                                              pWindow->passes[0].renderShader.use();
+                                                              // No additional uniforms needed - time is passed automatically
+                                                          }
+                                                      },
+
+                                                      // SizeCallback
+                                                      [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                      // KeyCallback
+                                                      [](cg::ManagedWindow *pWindow, int key)
+                                                      {
+                                                          return true; // Propagate by default
+                                                      },
+
+                                                      // MousebuttonCallback
+                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
+                                                      {
+                                                          // No mouse interaction required for this demo
+                                                      },
+
+                                                      // ScrollCallback
+                                                      [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods) {},
+
+                                                      // CursorposCallback
+                                                      [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          // No cursor interaction required for this demo
                                                       }},
                                                      pMainWindow));
 
@@ -786,6 +862,74 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                     break;
                 }
             }
+            detachedWindows.push_back(pDetached);
+            glfwShowWindow(pDetached);
+            glfwFocusWindow(pDetached);
+        }
+    }
+    else if (subwindowIndex == 2)
+    {
+        // Create detached Assignment 3 window
+        GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
+                                                         nullptr,                                 // No parent - standalone window
+                                                         {0, 0, 800, 600},                        // x, y, width, height
+                                                         "Assignment 3 - Ray Tracing (Detached)", // Title
+                                                         NONE,
+                                                         NONE,
+                                                         NONE,
+                                                         {{{NOMARGIN},
+                                                           NONE,
+                                                           DISABLE,
+                                                           {{QUAD}},
+                                                           NONE,
+                                                           NONE,
+                                                           DEFAULT,
+                                                           {
+#include "Shaders/Shader.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA3.frag.glsl"
+                                                           }}},
+
+                                                         // FocusCallback
+                                                         [](cg::ManagedWindow *pWindow, int focused)
+                                                         {
+                                                             if (focused)
+                                                             {
+                                                                 std::cout << "Detached Assignment 3 window focused" << std::endl;
+                                                                 std::cout << "Ray Tracing Demo: Earth, Sun, and Moon system" << std::endl;
+                                                             }
+                                                         },
+
+                                                         // InitCallback
+                                                         [](cg::ManagedWindow *pWindow, int pass)
+                                                         {
+                                                             if (pass == 0)
+                                                             {
+                                                                 pWindow->passes[0].renderShader.use();
+                                                             }
+                                                         },
+
+                                                         // SizeCallback
+                                                         [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                         // KeyCallback
+                                                         [](cg::ManagedWindow *pWindow, int key)
+                                                         {
+                                                             return true;
+                                                         },
+
+                                                         // MousebuttonCallback
+                                                         [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos) {},
+
+                                                         // ScrollCallback
+                                                         [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods) {},
+
+                                                         // CursorposCallback
+                                                         [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods) {}},
+                                                        pMainWindow);
+
+        if (pDetached)
+        {
             detachedWindows.push_back(pDetached);
             glfwShowWindow(pDetached);
             glfwFocusWindow(pDetached);
