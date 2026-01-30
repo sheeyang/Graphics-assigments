@@ -3,16 +3,18 @@
 \author Vadim Surov (vsurov@digipen.edu)
 \co-author Chew Shee Yang (chew.s@digipen.edu)
 \par Course: CSD2151
-\par Assignment: 2 (Ray Casting)
-\date 01/17/2026 (MM/DD/YYYY)
+\par Assignment: 4 (Blinn-Phong Shading)
+\date 02/01/2026 (MM/DD/YYYY)
 \brief
-    Application entry point for the Ray Casting assignment. Implements a menu
+    Application entry point for the Blinn-Phong Shading assignment. Implements a menu
     system with subwindows that can be opened in separate windows on double-click.
 
     Features:
     - Main window with 4x3 grid layout for subwindows (up to 12)
     - Subwindow 1: Assignment 1 (Tabs) demo
     - Subwindow 2: Assignment 2 (Ray Casting) demo
+    - Subwindow 3: Assignment 3 (Ray Tracing) demo
+    - Subwindow 4: Assignment 4 (Blinn-Phong Shading) demo
     - Double-click on subwindow to open in new actual window
     - Interactable subwindows with full keyboard/mouse support
 
@@ -35,7 +37,7 @@ const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 12 subwindows max
 const int GRID_GAP = 10;
 
 // Number of active subwindows
-const int NUM_SUBWINDOWS = 3;
+const int NUM_SUBWINDOWS = 4;
 
 // Tab indicator constants (from Assignment 1)
 const int NUM_TABS = 3;
@@ -45,6 +47,10 @@ const float TAB_CIRCLE_SPACING = 40.0f;
 
 // Double-click detection threshold (in seconds)
 const double DOUBLE_CLICK_TIME = 0.3;
+
+// Assignment 4 constants
+constexpr float A4_OBJECT_DISTANCE = 3.0f; // Distance of objects from center
+constexpr float A4_PLANE_SCALE = 2.0f;     // Scale of the floor plane
 
 // ============================================================================
 // Map data for collision detection and shader (passed to GPU)
@@ -127,7 +133,7 @@ int main(int argc, char **argv)
         pMainWindow = windowManager.addWindow({cg::State::SHOW,               // State (SHOW, HIDE)
                                                nullptr,                       // Parent window (nullptr for top-level window)
                                                {0, 0, 1024, 768},             // Viewport - x, y, width, height
-                                               "CSD2151 Assignment 2 - Menu", // Title
+                                               "CSD2151 Assignment 4 - Menu", // Title
                                                {0.15f, 0.15f, 0.2f, 1.0f},    // Background color (dark blue-grey)
                                                NONE,                          // Textures
                                                NONE,                          // Compute shader
@@ -153,7 +159,7 @@ int main(int argc, char **argv)
                                                    if (focused)
                                                    {
                                                        std::cout << std::endl;
-                                                       std::cout << "CSD2151 Assignment 2 - Menu (version "
+                                                       std::cout << "CSD2151 Assignment 4 - Menu (version "
                                                                  << __DATE__ << " " << __TIME__ << ")";
                                                        std::cout << std::endl
                                                                  << R"(
@@ -172,6 +178,7 @@ Subwindows:
    - Subwindow 1: Assignment 1 (Tabs) - Animated visual effects
    - Subwindow 2: Assignment 2 (Ray Casting) - First-person environment
    - Subwindow 3: Assignment 3 (Ray Tracing) - Earth, Sun, Moon system
+   - Subwindow 4: Assignment 4 (Blinn-Phong) - 3D shaded objects with lighting
 )";
                                                    }
                                                },
@@ -476,22 +483,22 @@ Subwindows:
         // ====================================================================
         // SUBWINDOW 3: Assignment 3 (Ray Tracing)
         // ====================================================================
-        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,             // State
-                                                      pMainWindow,                 // Parent window
-                                                      {2, GRID_SIZE, GRID_GAP},    // Grid position: element 2 in grid
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,              // State
+                                                      pMainWindow,                  // Parent window
+                                                      {2, GRID_SIZE, GRID_GAP},     // Grid position: element 2 in grid
                                                       "Assignment 3 - Ray Tracing", // Title
-                                                      NONE,                        // Background color
-                                                      NONE,                        // Textures
-                                                      NONE,                        // Compute shader
-                                                      {                            // Rendering passes
-                                                       {                           // Pass 0
-                                                        {NOMARGIN},                // Viewport
-                                                        NONE,                      // Background color
-                                                        DISABLE,                   // Depth test
-                                                        {{QUAD}},                  // Objects
-                                                        NONE,                      // Cameras
-                                                        NONE,                      // Lights
-                                                        DEFAULT,                   // Rendering target
+                                                      NONE,                         // Background color
+                                                      NONE,                         // Textures
+                                                      NONE,                         // Compute shader
+                                                      {                             // Rendering passes
+                                                       {                            // Pass 0
+                                                        {NOMARGIN},                 // Viewport
+                                                        NONE,                       // Background color
+                                                        DISABLE,                    // Depth test
+                                                        {{QUAD}},                   // Objects
+                                                        NONE,                       // Cameras
+                                                        NONE,                       // Lights
+                                                        DEFAULT,                    // Rendering target
                                                         {
         // Shaders - Assignment 3 ray tracing
 #include "Shaders/Shader.vert.glsl"
@@ -545,6 +552,203 @@ Subwindows:
                                                       [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
                                                       {
                                                           // No cursor interaction required for this demo
+                                                      }},
+                                                     pMainWindow));
+
+// ====================================================================
+// SUBWINDOW 4: Assignment 4 (Blinn-Phong Shading)
+// ====================================================================
+// Demo objects for Blinn-Phong shading:
+// - Blue plane (floor) at center, offset slightly lower
+// - Sphere (scaling animation) - positioned on one side
+// - Cube (spinning) - positioned on another side
+// - Torus/Donut (spinning) - positioned on another side
+// - Teapot (spinning) - positioned on another side
+// All objects visible simultaneously, positioned at equal distance from center
+#define A4_PLANE_OBJECTS                                                                                                                                           \
+    {PLANE, PHONG_MATERIAL_BLUE, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(A4_PLANE_SCALE)), VISIBLE}, \
+        {SPHERE, PHONG_MATERIAL_ORANGE, glm::translate(glm::mat4(1.0f), glm::vec3(-A4_OBJECT_DISTANCE, 0.0f, 0.0f)), VISIBLE},                                     \
+        {CUBE, PHONG_MATERIAL_ORANGE, glm::translate(glm::mat4(1.0f), glm::vec3(A4_OBJECT_DISTANCE, 0.0f, 0.0f)), VISIBLE},                                        \
+        {TORUS, PHONG_MATERIAL_ORANGE, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -A4_OBJECT_DISTANCE)), VISIBLE},                                      \
+        {TEAPOT, PHONG_MATERIAL_ORANGE, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, A4_OBJECT_DISTANCE)), VISIBLE}
+
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,              // State
+                                                      pMainWindow,                  // Parent window
+                                                      {3, GRID_SIZE, GRID_GAP},     // Grid position: element 3 in grid
+                                                      "Assignment 4 - Blinn-Phong", // Title
+                                                      BLACK,                        // Background color
+                                                      NONE,                         // Textures
+                                                      NONE,                         // Compute shader
+                                                      {                             // Rendering passes
+                                                       {                            // Pass 0
+                                                        {NOMARGIN},                 // Viewport (use margin for border)
+                                                        BLACK,                      // Background color
+                                                        ENABLE,                     // Depth test - IMPORTANT for 3D!
+                                                        {A4_PLANE_OBJECTS},         // Objects - plane + 4 objects around it
+                                                        {DEFAULT},                  // Camera - uses orbiting camera
+                                                        {{{0.0f, 5.0f, 5.0f}}},     // Light - positioned above/front
+                                                        DEFAULT,                    // Rendering target
+                                                        {
+        // Shaders - Assignment 4 Blinn-Phong shading
+#include "Shaders/ShaderA4.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA4.frag.glsl"
+                                                        }}},
+
+                                                      // FocusCallback - Print help info when window gains focus
+                                                      [](cg::ManagedWindow *pWindow, int focused)
+                                                      {
+                                                          if (focused)
+                                                          {
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Subwindow 4 (Assignment 4 - Blinn-Phong Shading)" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "Blinn-Phong Shading Demo with multiple objects:" << std::endl;
+                                                              std::cout << "- Ambient + Diffuse + Specular components" << std::endl;
+                                                              std::cout << "- Uses half-vector (H) for specular calculation" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "SCENE LAYOUT:" << std::endl;
+                                                              std::cout << "- Blue Plane: Floor at center (slightly lowered)" << std::endl;
+                                                              std::cout << "- Sphere: Grows and shrinks (left side)" << std::endl;
+                                                              std::cout << "- Cube: Spins around arbitrary axis (right side)" << std::endl;
+                                                              std::cout << "- Torus: Spins around Y-axis (back)" << std::endl;
+                                                              std::cout << "- Teapot: Spins around Y-axis (front)" << std::endl;
+                                                              std::cout << "- All animations are frame-rate independent" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "- Mouse drag: Orbit camera around scene" << std::endl;
+                                                              std::cout << "- Scroll: Zoom in/out" << std::endl;
+                                                              std::cout << "- Shift + Mouse drag: Move light source" << std::endl;
+                                                              std::cout << "- Shift + Scroll: Adjust light distance" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
+                                                      },
+
+                                                      // InitCallback - Set up uniforms each frame for ALL objects
+                                                      [](cg::ManagedWindow *pWindow, int pass)
+                                                      {
+                                                          if (pass == 0)
+                                                          {
+                                                              auto &shader = pWindow->passes[0].renderShader;
+                                                              shader.use();
+
+                                                              // Get current time for frame-rate independent animation
+                                                              float time = static_cast<float>(glfwGetTime());
+
+                                                              // Animation parameters
+                                                              const float rotationSpeed = 1.0f; // radians per second
+                                                              const float scaleSpeed = 1.5f;    // scale oscillation speed
+
+                                                              // Get camera and light references
+                                                              auto &camera = pWindow->passes[0].cameras[0];
+                                                              auto &light = pWindow->passes[0].lights[0];
+
+                                                              // Compute View and Projection matrices
+                                                              float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                 ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                 : 1.0f;
+                                                              glm::mat4 V = camera.getLookAt();
+                                                              glm::mat4 P = camera.getPerspective(aspect);
+
+                                                              // Set view and projection matrices
+                                                              shader.setUniform("V", V);
+                                                              shader.setUniform("P", P);
+
+                                                              // Set light uniforms
+                                                              light.setUniforms(&shader, 0);
+
+                                                              // Update model transforms for each object with animations
+                                                              // Object 0: Plane - static, just the base transform
+                                                              // Object 1: Sphere - scaling animation
+                                                              // Object 2: Cube - spinning around arbitrary axis
+                                                              // Object 3: Torus - spinning around Y-axis
+                                                              // Object 4: Teapot - spinning around Y-axis
+
+                                                              auto &objects = pWindow->passes[0].objects;
+
+                                                              // Sphere (index 1) - grows and shrinks
+                                                              if (objects.size() > 1 && !objects[1].instances.empty())
+                                                              {
+                                                                  float scale = 0.5f + 0.3f * sin(time * scaleSpeed);
+                                                                  glm::mat4 basePos = glm::translate(glm::mat4(1.0f), glm::vec3(-A4_OBJECT_DISTANCE, 0.0f, 0.0f));
+                                                                  objects[1].instances[0].modeltransform = basePos * glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+                                                              }
+
+                                                              // Cube (index 2) - spinning around arbitrary axis (1,1,1)
+                                                              if (objects.size() > 2 && !objects[2].instances.empty())
+                                                              {
+                                                                  float angle = time * rotationSpeed * 0.8f;
+                                                                  glm::vec3 arbitraryAxis = glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f));
+                                                                  glm::mat4 basePos = glm::translate(glm::mat4(1.0f), glm::vec3(A4_OBJECT_DISTANCE, 0.0f, 0.0f));
+                                                                  objects[2].instances[0].modeltransform = basePos * glm::rotate(glm::mat4(1.0f), angle, arbitraryAxis);
+                                                              }
+
+                                                              // Torus (index 3) - spinning around Y-axis
+                                                              if (objects.size() > 3 && !objects[3].instances.empty())
+                                                              {
+                                                                  float angle = time * rotationSpeed;
+                                                                  glm::mat4 basePos = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -A4_OBJECT_DISTANCE));
+                                                                  objects[3].instances[0].modeltransform = basePos * glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
+                                                              }
+
+                                                              // Teapot (index 4) - spinning around Y-axis
+                                                              if (objects.size() > 4 && !objects[4].instances.empty())
+                                                              {
+                                                                  float angle = time * rotationSpeed * 0.6f;
+                                                                  glm::mat4 basePos = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, A4_OBJECT_DISTANCE));
+                                                                  objects[4].instances[0].modeltransform = basePos * glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
+                                                              }
+                                                          }
+                                                      },
+
+                                                      // SizeCallback
+                                                      [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                      // KeyCallback - Handle key inputs
+                                                      [](cg::ManagedWindow *pWindow, int key)
+                                                      {
+                                                          return true; // Propagate other keys
+                                                      },
+
+                                                      // MousebuttonCallback
+                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
+                                                      {
+                                                          // Mouse button handling is done via cursor callback
+                                                      },
+
+                                                      // ScrollCallback - Zoom camera or adjust light distance
+                                                      [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          if (mods & GLFW_MOD_SHIFT)
+                                                          {
+                                                              // Shift + Scroll: Adjust light distance
+                                                              pWindow->passes[0].lights[0].onScroll(xoffset, yoffset, 0);
+                                                          }
+                                                          else
+                                                          {
+                                                              // Normal scroll: Zoom camera
+                                                              pWindow->passes[0].cameras[0].onScroll(xoffset, yoffset);
+                                                          }
+                                                      },
+
+                                                      // CursorposCallback - Orbit camera or move light
+                                                      [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          if (pWindow->context.input.lbutton_down)
+                                                          {
+                                                              if (mods & GLFW_MOD_SHIFT)
+                                                              {
+                                                                  // Shift + Drag: Move light source
+                                                                  pWindow->passes[0].lights[0].onCursor(xoffset, yoffset, 0);
+                                                              }
+                                                              else
+                                                              {
+                                                                  // Normal drag: Orbit camera
+                                                                  pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
+                                                              }
+                                                          }
                                                       }},
                                                      pMainWindow));
 
@@ -926,6 +1130,159 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
 
                                                          // CursorposCallback
                                                          [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods) {}},
+                                                        pMainWindow);
+
+        if (pDetached)
+        {
+            detachedWindows.push_back(pDetached);
+            glfwShowWindow(pDetached);
+            glfwFocusWindow(pDetached);
+        }
+    }
+    else if (subwindowIndex == 3)
+    {
+        // Create detached Assignment 4 window (Blinn-Phong Shading)
+        GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
+                                                         nullptr,                                 // No parent - standalone window
+                                                         {0, 0, 800, 600},                        // x, y, width, height
+                                                         "Assignment 4 - Blinn-Phong (Detached)", // Title
+                                                         BLACK,
+                                                         NONE,
+                                                         NONE,
+                                                         {{{NOMARGIN},
+                                                           BLACK,
+                                                           ENABLE,                 // Depth test enabled
+                                                           {A4_PLANE_OBJECTS},     // Objects - plane + 4 objects
+                                                           {DEFAULT},              // Camera
+                                                           {{{0.0f, 5.0f, 5.0f}}}, // Light
+                                                           DEFAULT,
+                                                           {
+#include "Shaders/ShaderA4.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA4.frag.glsl"
+                                                           }}},
+
+                                                         // FocusCallback
+                                                         [](cg::ManagedWindow *pWindow, int focused)
+                                                         {
+                                                             if (focused)
+                                                             {
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "Detached Assignment 4 (Blinn-Phong Shading)" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "SCENE: Blue plane with 4 animated objects" << std::endl;
+                                                                 std::cout << "CONTROLS:" << std::endl;
+                                                                 std::cout << "- Mouse drag: Orbit camera" << std::endl;
+                                                                 std::cout << "- Scroll: Zoom in/out" << std::endl;
+                                                                 std::cout << "- Shift + Mouse drag: Move light" << std::endl;
+                                                                 std::cout << "- Shift + Scroll: Light distance" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                             }
+                                                         },
+
+                                                         // InitCallback - animate all objects
+                                                         [](cg::ManagedWindow *pWindow, int pass)
+                                                         {
+                                                             if (pass == 0)
+                                                             {
+                                                                 auto &shader = pWindow->passes[0].renderShader;
+                                                                 shader.use();
+
+                                                                 float time = static_cast<float>(glfwGetTime());
+                                                                 const float rotationSpeed = 1.0f;
+                                                                 const float scaleSpeed = 1.5f;
+
+                                                                 auto &camera = pWindow->passes[0].cameras[0];
+                                                                 auto &light = pWindow->passes[0].lights[0];
+
+                                                                 float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                    ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                    : 1.0f;
+                                                                 glm::mat4 V = camera.getLookAt();
+                                                                 glm::mat4 P = camera.getPerspective(aspect);
+
+                                                                 shader.setUniform("V", V);
+                                                                 shader.setUniform("P", P);
+                                                                 light.setUniforms(&shader, 0);
+
+                                                                 auto &objects = pWindow->passes[0].objects;
+
+                                                                 // Sphere (index 1) - grows and shrinks
+                                                                 if (objects.size() > 1 && !objects[1].instances.empty())
+                                                                 {
+                                                                     float scale = 0.5f + 0.3f * sin(time * scaleSpeed);
+                                                                     glm::mat4 basePos = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.0f, 0.0f));
+                                                                     objects[1].instances[0].modeltransform = basePos * glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+                                                                 }
+
+                                                                 // Cube (index 2) - spinning
+                                                                 if (objects.size() > 2 && !objects[2].instances.empty())
+                                                                 {
+                                                                     float angle = time * rotationSpeed * 0.8f;
+                                                                     glm::vec3 arbitraryAxis = glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f));
+                                                                     glm::mat4 basePos = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
+                                                                     objects[2].instances[0].modeltransform = basePos * glm::rotate(glm::mat4(1.0f), angle, arbitraryAxis);
+                                                                 }
+
+                                                                 // Torus (index 3) - spinning
+                                                                 if (objects.size() > 3 && !objects[3].instances.empty())
+                                                                 {
+                                                                     float angle = time * rotationSpeed;
+                                                                     glm::mat4 basePos = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.5f));
+                                                                     objects[3].instances[0].modeltransform = basePos * glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
+                                                                 }
+
+                                                                 // Teapot (index 4) - spinning
+                                                                 if (objects.size() > 4 && !objects[4].instances.empty())
+                                                                 {
+                                                                     float angle = time * rotationSpeed * 0.6f;
+                                                                     glm::mat4 basePos = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 1.5f));
+                                                                     objects[4].instances[0].modeltransform = basePos * glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
+                                                                 }
+                                                             }
+                                                         },
+
+                                                         // SizeCallback
+                                                         [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                         // KeyCallback
+                                                         [](cg::ManagedWindow *pWindow, int key)
+                                                         {
+                                                             return true;
+                                                         },
+
+                                                         // MousebuttonCallback
+                                                         [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos) {},
+
+                                                         // ScrollCallback
+                                                         [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             if (mods & GLFW_MOD_SHIFT)
+                                                             {
+                                                                 pWindow->passes[0].lights[0].onScroll(xoffset, yoffset, 0);
+                                                             }
+                                                             else
+                                                             {
+                                                                 pWindow->passes[0].cameras[0].onScroll(xoffset, yoffset);
+                                                             }
+                                                         },
+
+                                                         // CursorposCallback
+                                                         [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             if (pWindow->context.input.lbutton_down)
+                                                             {
+                                                                 if (mods & GLFW_MOD_SHIFT)
+                                                                 {
+                                                                     pWindow->passes[0].lights[0].onCursor(xoffset, yoffset, 0);
+                                                                 }
+                                                                 else
+                                                                 {
+                                                                     pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
+                                                                 }
+                                                             }
+                                                         }},
                                                         pMainWindow);
 
         if (pDetached)
