@@ -3,10 +3,10 @@
 \author Vadim Surov (vsurov@digipen.edu)
 \co-author Chew Shee Yang (chew.s@digipen.edu)
 \par Course: CSD2151
-\par Assignment: 4 (Blinn-Phong Shading)
-\date 02/01/2026 (MM/DD/YYYY)
+\par Assignment: 5 (Environment Mapping)
+\date 02/02/2026 (MM/DD/YYYY)
 \brief
-    Application entry point for the Blinn-Phong Shading assignment. Implements a menu
+    Application entry point for the Environment Mapping assignment. Implements a menu
     system with subwindows that can be opened in separate windows on double-click.
 
     Features:
@@ -15,6 +15,7 @@
     - Subwindow 2: Assignment 2 (Ray Casting) demo
     - Subwindow 3: Assignment 3 (Ray Tracing) demo
     - Subwindow 4: Assignment 4 (Blinn-Phong Shading) demo
+    - Subwindow 5: Assignment 5 (Environment Mapping) demo
     - Double-click on subwindow to open in new actual window
     - Interactable subwindows with full keyboard/mouse support
 
@@ -37,7 +38,7 @@ const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 12 subwindows max
 const int GRID_GAP = 10;
 
 // Number of active subwindows
-const int NUM_SUBWINDOWS = 4;
+const int NUM_SUBWINDOWS = 5;
 
 // Tab indicator constants (from Assignment 1)
 const int NUM_TABS = 3;
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
         pMainWindow = windowManager.addWindow({cg::State::SHOW,               // State (SHOW, HIDE)
                                                nullptr,                       // Parent window (nullptr for top-level window)
                                                {0, 0, 1024, 768},             // Viewport - x, y, width, height
-                                               "CSD2151 Assignment 4 - Menu", // Title
+                                               "CSD2151 Assignment 5 - Menu", // Title
                                                {0.15f, 0.15f, 0.2f, 1.0f},    // Background color (dark blue-grey)
                                                NONE,                          // Textures
                                                NONE,                          // Compute shader
@@ -159,7 +160,7 @@ int main(int argc, char **argv)
                                                    if (focused)
                                                    {
                                                        std::cout << std::endl;
-                                                       std::cout << "CSD2151 Assignment 4 - Menu (version "
+                                                       std::cout << "CSD2151 Assignment 5 - Menu (version "
                                                                  << __DATE__ << " " << __TIME__ << ")";
                                                        std::cout << std::endl
                                                                  << R"(
@@ -179,6 +180,7 @@ Subwindows:
    - Subwindow 2: Assignment 2 (Ray Casting) - First-person environment
    - Subwindow 3: Assignment 3 (Ray Tracing) - Earth, Sun, Moon system
    - Subwindow 4: Assignment 4 (Blinn-Phong) - 3D shaded objects with lighting
+   - Subwindow 5: Assignment 5 (Environment Mapping) - Skybox with reflection/refraction
 )";
                                                    }
                                                },
@@ -752,6 +754,212 @@ Subwindows:
                                                       }},
                                                      pMainWindow));
 
+        // ====================================================================
+        // SUBWINDOW 5: Assignment 5 (Environment Mapping)
+        // ====================================================================
+        // Environment mapping demo with:
+        // - Pass 0: Skybox with procedural checkerboard texture
+        // - Pass 1: Objects (sphere, torus, cube) with reflection/refraction
+        // Uses checkerboardTexture() and vec2uv() functions in shaders
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                      // State
+                                                      pMainWindow,                          // Parent window
+                                                      {4, GRID_SIZE, GRID_GAP},             // Grid position: element 4 in grid
+                                                      "Assignment 5 - Environment Mapping", // Title
+                                                      BLACK,                                // Background color
+                                                      NONE,                                 // Textures (using procedural)
+                                                      NONE,                                 // Compute shader
+                                                      {                                     // Rendering passes
+                                                       {                                    // Pass 0 - Skybox
+                                                        {NOMARGIN},                         // Viewport
+                                                        NONE,                               // Background color
+                                                        ENABLE,                             // Depth test
+                                                        {{SKYBOX}},                         // Objects - skybox cube
+                                                        {{{3.0f, 2.0f, 0.0f}}},             // Camera - orbiting
+                                                        NONE,                               // Lights
+                                                        DEFAULT,                            // Rendering target
+                                                        {
+        // Shaders - Assignment 5 skybox
+#include "Shaders/ShaderA5.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA5.frag.glsl"
+                                                        }},
+                                                       {                                // Pass 1 - Objects
+                                                        {NOMARGIN},                     // Viewport
+                                                        NONE,                           // Background color
+                                                        ENABLE,                         // Depth test
+                                                        DEMOOBJECTS_ENVIRONMENTMAPPING, // Objects - sphere, torus, cube
+                                                        {{{3.0f, 2.0f, 0.0f}}},         // Camera - same as skybox
+                                                        NONE,                           // Lights
+                                                        DEFAULT,                        // Rendering target
+                                                        {
+        // Shaders - Assignment 5 objects with reflection/refraction
+#include "Shaders/ShaderA5Obj.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA5Obj.frag.glsl"
+                                                        }}},
+
+                                                      // FocusCallback - Print help info
+                                                      [](cg::ManagedWindow *pWindow, int focused)
+                                                      {
+                                                          if (focused)
+                                                          {
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Subwindow 5 (Assignment 5 - Environment Mapping)" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "Environment Mapping Demo:" << std::endl;
+                                                              std::cout << "- Procedural checkerboard skybox" << std::endl;
+                                                              std::cout << "- Reflection and refraction on objects" << std::endl;
+                                                              std::cout << "- Three objects: Sphere, Torus, Cube (one visible at a time)" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "Current object: " << (pWindow->context.intparam[0] == 0 ? "Sphere" : (pWindow->context.intparam[0] == 1 ? "Torus" : "Cube")) << std::endl;
+                                                              std::cout << "Reflection Factor: " << pWindow->context.floatparam[0] << std::endl;
+                                                              std::cout << "Eta (Refraction Ratio): " << pWindow->context.floatparam[1] << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "- Mouse drag: Orbit camera around object" << std::endl;
+                                                              std::cout << "- Scroll: Zoom in/out" << std::endl;
+                                                              std::cout << "- Ctrl + Scroll: Change Reflection Factor (0.0 - 1.0)" << std::endl;
+                                                              std::cout << "- Alt + Scroll: Change Refraction Ratio (0.5 - 1.5)" << std::endl;
+                                                              std::cout << "- 1/2/3 keys: Switch between Sphere/Torus/Cube" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
+                                                      },
+
+                                                      // InitCallback - Set up uniforms for both passes
+                                                      [](cg::ManagedWindow *pWindow, int pass)
+                                                      {
+                                                          // Initialize parameters on first call
+                                                          if (pass == -1)
+                                                          {
+                                                              pWindow->context.floatparam[0] = 0.9f;  // reflectionFactor
+                                                              pWindow->context.floatparam[1] = 0.67f; // eta (glass ~1.5, so 1/1.5 ≈ 0.67)
+                                                              pWindow->context.intparam[0] = 0;       // Current object (0=sphere)
+
+                                                              // Set initial material parameters for all objects in pass 1
+                                                              for (auto &object : pWindow->passes[1].objects)
+                                                              {
+                                                                  object.instances[0].material.params["material.reflectionFactor"] =
+                                                                      {pWindow->context.floatparam[0]};
+                                                                  object.instances[0].material.params["material.eta"] =
+                                                                      {pWindow->context.floatparam[1]};
+                                                              }
+                                                          }
+
+                                                          if (pass == 0 || pass == 1)
+                                                          {
+                                                              auto &shader = pWindow->passes[pass].renderShader;
+                                                              shader.use();
+
+                                                              // Get camera reference (same for both passes)
+                                                              auto &camera = pWindow->passes[pass].cameras[0];
+
+                                                              // Compute View and Projection matrices
+                                                              float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                 ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                 : 1.0f;
+                                                              glm::mat4 V = camera.getLookAt();
+                                                              glm::mat4 P = camera.getPerspective(aspect);
+
+                                                              shader.setUniform("V", V);
+                                                              shader.setUniform("P", P);
+
+                                                              // For pass 1 (objects), also set camera position for reflection/refraction
+                                                              if (pass == 1)
+                                                              {
+                                                                  shader.setUniform("camera.position", camera.getLookAt()[3]);
+                                                                  // Camera position can be extracted from inverse of view matrix
+                                                                  glm::mat4 invV = glm::inverse(V);
+                                                                  shader.setUniform("camera.position", glm::vec3(invV[3]));
+                                                              }
+                                                          }
+                                                      },
+
+                                                      // SizeCallback
+                                                      [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                      // KeyCallback - Switch objects with 1/2/3 keys
+                                                      [](cg::ManagedWindow *pWindow, int key)
+                                                      {
+                                                          int newObject = -1;
+                                                          if (key == GLFW_KEY_1)
+                                                              newObject = 0; // Sphere
+                                                          else if (key == GLFW_KEY_2)
+                                                              newObject = 1; // Torus
+                                                          else if (key == GLFW_KEY_3)
+                                                              newObject = 2; // Cube
+
+                                                          if (newObject >= 0 && newObject != pWindow->context.intparam[0])
+                                                          {
+                                                              // Hide current object
+                                                              pWindow->passes[1].objects[pWindow->context.intparam[0]].instances[0].isVisible = false;
+                                                              // Show new object
+                                                              pWindow->passes[1].objects[newObject].instances[0].isVisible = true;
+                                                              pWindow->context.intparam[0] = newObject;
+
+                                                              const char *names[] = {"Sphere", "Torus", "Cube"};
+                                                              std::cout << "Switched to: " << names[newObject] << std::endl;
+                                                              return false;
+                                                          }
+                                                          return true;
+                                                      },
+
+                                                      // MousebuttonCallback
+                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
+                                                      {
+                                                          // Mouse button handling done via cursor callback
+                                                      },
+
+                                                      // ScrollCallback - Zoom or adjust material properties
+                                                      [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          if (mods & GLFW_MOD_CONTROL)
+                                                          {
+                                                              // Ctrl + Scroll: Adjust reflection factor
+                                                              pWindow->context.floatparam[0] += (yoffset > 0.0 ? 0.05f : -0.05f);
+                                                              pWindow->context.floatparam[0] = glm::clamp(pWindow->context.floatparam[0], 0.0f, 1.0f);
+
+                                                              // Update material for all objects
+                                                              for (auto &object : pWindow->passes[1].objects)
+                                                                  object.instances[0].material.params["material.reflectionFactor"] =
+                                                                      {pWindow->context.floatparam[0]};
+
+                                                              std::cout << "Reflection Factor: " << pWindow->context.floatparam[0] << std::endl;
+                                                          }
+                                                          else if (mods & GLFW_MOD_ALT)
+                                                          {
+                                                              // Alt + Scroll: Adjust eta (refraction ratio)
+                                                              pWindow->context.floatparam[1] += (yoffset > 0.0 ? 0.05f : -0.05f);
+                                                              pWindow->context.floatparam[1] = glm::clamp(pWindow->context.floatparam[1], 0.5f, 1.5f);
+
+                                                              // Update material for all objects
+                                                              for (auto &object : pWindow->passes[1].objects)
+                                                                  object.instances[0].material.params["material.eta"] =
+                                                                      {pWindow->context.floatparam[1]};
+
+                                                              std::cout << "Eta (Refraction Ratio): " << pWindow->context.floatparam[1] << std::endl;
+                                                          }
+                                                          else
+                                                          {
+                                                              // Normal scroll: Zoom camera (both passes share camera)
+                                                              pWindow->passes[0].cameras[0].onScroll(xoffset, yoffset);
+                                                              pWindow->passes[1].cameras[0].onScroll(xoffset, yoffset);
+                                                          }
+                                                      },
+
+                                                      // CursorposCallback - Orbit camera
+                                                      [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          if (pWindow->context.input.lbutton_down)
+                                                          {
+                                                              // Orbit camera (both passes share camera)
+                                                              pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
+                                                              pWindow->passes[1].cameras[0].onCursor(xoffset, yoffset);
+                                                          }
+                                                      }},
+                                                     pMainWindow));
+
         // Initialize camera positions for ray casting
         // Set initial camera position to center of map
         for (auto &window : windowManager.windows)
@@ -1281,6 +1489,188 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  {
                                                                      pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
                                                                  }
+                                                             }
+                                                         }},
+                                                        pMainWindow);
+
+        if (pDetached)
+        {
+            detachedWindows.push_back(pDetached);
+            glfwShowWindow(pDetached);
+            glfwFocusWindow(pDetached);
+        }
+    }
+    else if (subwindowIndex == 4)
+    {
+        // Create detached Assignment 5 window (Environment Mapping)
+        GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
+                                                         nullptr,                                         // No parent - standalone window
+                                                         {0, 0, 800, 600},                                // x, y, width, height
+                                                         "Assignment 5 - Environment Mapping (Detached)", // Title
+                                                         BLACK,
+                                                         NONE,
+                                                         NONE,
+                                                         { // Rendering passes
+                                                          {// Pass 0 - Skybox
+                                                           {NOMARGIN},
+                                                           NONE,
+                                                           ENABLE,
+                                                           {{SKYBOX}},
+                                                           {{{3.0f, 2.0f, 0.0f}}},
+                                                           NONE,
+                                                           DEFAULT,
+                                                           {
+#include "Shaders/ShaderA5.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA5.frag.glsl"
+                                                           }},
+                                                          {// Pass 1 - Objects
+                                                           {NOMARGIN},
+                                                           NONE,
+                                                           ENABLE,
+                                                           DEMOOBJECTS_ENVIRONMENTMAPPING,
+                                                           {{{3.0f, 2.0f, 0.0f}}},
+                                                           NONE,
+                                                           DEFAULT,
+                                                           {
+#include "Shaders/ShaderA5Obj.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA5Obj.frag.glsl"
+                                                           }}},
+
+                                                         // FocusCallback
+                                                         [](cg::ManagedWindow *pWindow, int focused)
+                                                         {
+                                                             if (focused)
+                                                             {
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "Detached Assignment 5 (Environment Mapping)" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "Current object: " << (pWindow->context.intparam[0] == 0 ? "Sphere" : (pWindow->context.intparam[0] == 1 ? "Torus" : "Cube")) << std::endl;
+                                                                 std::cout << "Reflection Factor: " << pWindow->context.floatparam[0] << std::endl;
+                                                                 std::cout << "Eta (Refraction Ratio): " << pWindow->context.floatparam[1] << std::endl;
+                                                                 std::cout << "CONTROLS:" << std::endl;
+                                                                 std::cout << "- Mouse drag: Orbit camera" << std::endl;
+                                                                 std::cout << "- Scroll: Zoom" << std::endl;
+                                                                 std::cout << "- Ctrl+Scroll: Reflection Factor" << std::endl;
+                                                                 std::cout << "- Alt+Scroll: Refraction Ratio" << std::endl;
+                                                                 std::cout << "- 1/2/3: Switch Sphere/Torus/Cube" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                             }
+                                                         },
+
+                                                         // InitCallback
+                                                         [](cg::ManagedWindow *pWindow, int pass)
+                                                         {
+                                                             if (pass == -1)
+                                                             {
+                                                                 pWindow->context.floatparam[0] = 0.9f;
+                                                                 pWindow->context.floatparam[1] = 0.67f;
+                                                                 pWindow->context.intparam[0] = 0;
+
+                                                                 for (auto &object : pWindow->passes[1].objects)
+                                                                 {
+                                                                     object.instances[0].material.params["material.reflectionFactor"] =
+                                                                         {pWindow->context.floatparam[0]};
+                                                                     object.instances[0].material.params["material.eta"] =
+                                                                         {pWindow->context.floatparam[1]};
+                                                                 }
+                                                             }
+
+                                                             if (pass == 0 || pass == 1)
+                                                             {
+                                                                 auto &shader = pWindow->passes[pass].renderShader;
+                                                                 shader.use();
+
+                                                                 auto &camera = pWindow->passes[pass].cameras[0];
+
+                                                                 float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                    ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                    : 1.0f;
+                                                                 glm::mat4 V = camera.getLookAt();
+                                                                 glm::mat4 P = camera.getPerspective(aspect);
+
+                                                                 shader.setUniform("V", V);
+                                                                 shader.setUniform("P", P);
+
+                                                                 if (pass == 1)
+                                                                 {
+                                                                     glm::mat4 invV = glm::inverse(V);
+                                                                     shader.setUniform("camera.position", glm::vec3(invV[3]));
+                                                                 }
+                                                             }
+                                                         },
+
+                                                         // SizeCallback
+                                                         [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                         // KeyCallback
+                                                         [](cg::ManagedWindow *pWindow, int key)
+                                                         {
+                                                             int newObject = -1;
+                                                             if (key == GLFW_KEY_1)
+                                                                 newObject = 0;
+                                                             else if (key == GLFW_KEY_2)
+                                                                 newObject = 1;
+                                                             else if (key == GLFW_KEY_3)
+                                                                 newObject = 2;
+
+                                                             if (newObject >= 0 && newObject != pWindow->context.intparam[0])
+                                                             {
+                                                                 pWindow->passes[1].objects[pWindow->context.intparam[0]].instances[0].isVisible = false;
+                                                                 pWindow->passes[1].objects[newObject].instances[0].isVisible = true;
+                                                                 pWindow->context.intparam[0] = newObject;
+
+                                                                 const char *names[] = {"Sphere", "Torus", "Cube"};
+                                                                 std::cout << "Switched to: " << names[newObject] << std::endl;
+                                                                 return false;
+                                                             }
+                                                             return true;
+                                                         },
+
+                                                         // MousebuttonCallback
+                                                         [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos) {},
+
+                                                         // ScrollCallback
+                                                         [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             if (mods & GLFW_MOD_CONTROL)
+                                                             {
+                                                                 pWindow->context.floatparam[0] += (yoffset > 0.0 ? 0.05f : -0.05f);
+                                                                 pWindow->context.floatparam[0] = glm::clamp(pWindow->context.floatparam[0], 0.0f, 1.0f);
+
+                                                                 for (auto &object : pWindow->passes[1].objects)
+                                                                     object.instances[0].material.params["material.reflectionFactor"] =
+                                                                         {pWindow->context.floatparam[0]};
+
+                                                                 std::cout << "Reflection Factor: " << pWindow->context.floatparam[0] << std::endl;
+                                                             }
+                                                             else if (mods & GLFW_MOD_ALT)
+                                                             {
+                                                                 pWindow->context.floatparam[1] += (yoffset > 0.0 ? 0.05f : -0.05f);
+                                                                 pWindow->context.floatparam[1] = glm::clamp(pWindow->context.floatparam[1], 0.5f, 1.5f);
+
+                                                                 for (auto &object : pWindow->passes[1].objects)
+                                                                     object.instances[0].material.params["material.eta"] =
+                                                                         {pWindow->context.floatparam[1]};
+
+                                                                 std::cout << "Eta (Refraction Ratio): " << pWindow->context.floatparam[1] << std::endl;
+                                                             }
+                                                             else
+                                                             {
+                                                                 pWindow->passes[0].cameras[0].onScroll(xoffset, yoffset);
+                                                                 pWindow->passes[1].cameras[0].onScroll(xoffset, yoffset);
+                                                             }
+                                                         },
+
+                                                         // CursorposCallback
+                                                         [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             if (pWindow->context.input.lbutton_down)
+                                                             {
+                                                                 pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
+                                                                 pWindow->passes[1].cameras[0].onCursor(xoffset, yoffset);
                                                              }
                                                          }},
                                                         pMainWindow);
