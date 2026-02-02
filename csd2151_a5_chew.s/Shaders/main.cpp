@@ -811,9 +811,10 @@ Subwindows:
                                                               std::cout << "Environment Mapping Demo:" << std::endl;
                                                               std::cout << "- Procedural checkerboard skybox" << std::endl;
                                                               std::cout << "- Reflection and refraction on objects" << std::endl;
-                                                              std::cout << "- Three objects: Sphere, Torus, Cube (one visible at a time)" << std::endl;
+                                                              std::cout << "- Four objects: Sphere, Torus, Cube, Teapot (one visible at a time)" << std::endl;
                                                               std::cout << std::endl;
-                                                              std::cout << "Current object: " << (pWindow->context.intparam[0] == 0 ? "Sphere" : (pWindow->context.intparam[0] == 1 ? "Torus" : "Cube")) << std::endl;
+                                                              const char *objNames[] = {"Sphere", "Torus", "Cube", "Teapot"};
+                                                              std::cout << "Current object: " << objNames[pWindow->context.intparam[0]] << std::endl;
                                                               std::cout << "Reflection Factor: " << pWindow->context.floatparam[0] << std::endl;
                                                               std::cout << "Eta (Refraction Ratio): " << pWindow->context.floatparam[1] << std::endl;
                                                               std::cout << std::endl;
@@ -822,7 +823,7 @@ Subwindows:
                                                               std::cout << "- Scroll: Zoom in/out" << std::endl;
                                                               std::cout << "- Ctrl + Scroll: Change Reflection Factor (0.0 - 1.0)" << std::endl;
                                                               std::cout << "- Alt + Scroll: Change Refraction Ratio (0.5 - 1.5)" << std::endl;
-                                                              std::cout << "- 1/2/3 keys: Switch between Sphere/Torus/Cube" << std::endl;
+                                                              std::cout << "- 1/2/3/4 keys: Switch between Sphere/Torus/Cube/Teapot" << std::endl;
                                                               std::cout << "========================================" << std::endl;
                                                           }
                                                       },
@@ -879,7 +880,7 @@ Subwindows:
                                                       // SizeCallback
                                                       [](cg::ManagedWindow *pWindow, int width, int height) {},
 
-                                                      // KeyCallback - Switch objects with 1/2/3 keys
+                                                      // KeyCallback - Switch objects with 1/2/3/4 keys
                                                       [](cg::ManagedWindow *pWindow, int key)
                                                       {
                                                           int newObject = -1;
@@ -889,6 +890,8 @@ Subwindows:
                                                               newObject = 1; // Torus
                                                           else if (key == GLFW_KEY_3)
                                                               newObject = 2; // Cube
+                                                          else if (key == GLFW_KEY_4)
+                                                              newObject = 3; // Teapot
 
                                                           if (newObject >= 0 && newObject != pWindow->context.intparam[0])
                                                           {
@@ -898,7 +901,7 @@ Subwindows:
                                                               pWindow->passes[1].objects[newObject].instances[0].isVisible = true;
                                                               pWindow->context.intparam[0] = newObject;
 
-                                                              const char *names[] = {"Sphere", "Torus", "Cube"};
+                                                              const char *names[] = {"Sphere", "Torus", "Cube", "Teapot"};
                                                               std::cout << "Switched to: " << names[newObject] << std::endl;
                                                               return false;
                                                           }
@@ -1547,7 +1550,8 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  std::cout << "========================================" << std::endl;
                                                                  std::cout << "Detached Assignment 5 (Environment Mapping)" << std::endl;
                                                                  std::cout << "========================================" << std::endl;
-                                                                 std::cout << "Current object: " << (pWindow->context.intparam[0] == 0 ? "Sphere" : (pWindow->context.intparam[0] == 1 ? "Torus" : "Cube")) << std::endl;
+                                                                 const char *objNames[] = {"Sphere", "Torus", "Cube", "Teapot"};
+                                                                 std::cout << "Current object: " << objNames[pWindow->context.intparam[0]] << std::endl;
                                                                  std::cout << "Reflection Factor: " << pWindow->context.floatparam[0] << std::endl;
                                                                  std::cout << "Eta (Refraction Ratio): " << pWindow->context.floatparam[1] << std::endl;
                                                                  std::cout << "CONTROLS:" << std::endl;
@@ -1555,7 +1559,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  std::cout << "- Scroll: Zoom" << std::endl;
                                                                  std::cout << "- Ctrl+Scroll: Reflection Factor" << std::endl;
                                                                  std::cout << "- Alt+Scroll: Refraction Ratio" << std::endl;
-                                                                 std::cout << "- 1/2/3: Switch Sphere/Torus/Cube" << std::endl;
+                                                                 std::cout << "- 1/2/3/4: Switch Sphere/Torus/Cube/Teapot" << std::endl;
                                                                  std::cout << "========================================" << std::endl;
                                                              }
                                                          },
@@ -1615,6 +1619,8 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  newObject = 1;
                                                              else if (key == GLFW_KEY_3)
                                                                  newObject = 2;
+                                                             else if (key == GLFW_KEY_4)
+                                                                 newObject = 3;
 
                                                              if (newObject >= 0 && newObject != pWindow->context.intparam[0])
                                                              {
@@ -1622,7 +1628,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  pWindow->passes[1].objects[newObject].instances[0].isVisible = true;
                                                                  pWindow->context.intparam[0] = newObject;
 
-                                                                 const char *names[] = {"Sphere", "Torus", "Cube"};
+                                                                 const char *names[] = {"Sphere", "Torus", "Cube", "Teapot"};
                                                                  std::cout << "Switched to: " << names[newObject] << std::endl;
                                                                  return false;
                                                              }

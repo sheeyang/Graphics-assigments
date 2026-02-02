@@ -38,6 +38,12 @@
             INVISIBLE\
         },\
         {\
+            CUBE,\
+            MATERIAL_REFLECT_REFRACT,\
+            NOTRANSFORM,\
+            INVISIBLE\
+        },\
+        {\
             TEAPOT,\
             MATERIAL_REFLECT_REFRACT,\
             NOTRANSFORM,\
