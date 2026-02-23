@@ -69,13 +69,13 @@ namespace cg
         {
         }
 
-		// Copy constructor
+        // Copy constructor
         Program(const Program& program)
             : sc{ program.sc }, sv{ program.sv }, sf{ program.sf }, handle{ 0 }, linked{ false }, uniformLocations{ }
         {
-		}
+        }
 
-		// Copy assignment operator
+        // Copy assignment operator
         Program& operator=(const Program& program) = delete;
 
         // Destructor
@@ -84,15 +84,15 @@ namespace cg
         // Compile a shader
         void compileShader(const char* code, GLenum type);
 
-		// Build (compile and link) the shader program
+        // Build (compile and link) the shader program
         void build();
 
-		// Clean up resources associated with the shader program
-		void clean();
+        // Clean up resources associated with the shader program
+        void clean();
 
         // Convert the Program object to its OpenGL handle for easier use in OpenGL functions
 
-		// Validate the program (ensure it works correctly)
+        // Validate the program (ensure it works correctly)
         void validate(); 
 
         // Activate the shader program for use
@@ -101,7 +101,7 @@ namespace cg
         // Deactivate the shader program
         void disuse() const; 
 
-		// Implicit conversion to GLuint (OpenGL program handle)
+        // Implicit conversion to GLuint (OpenGL program handle)
         operator GLuint() {
             return handle;
         }
@@ -178,12 +178,12 @@ namespace cg
             glUniform1ui(getUniformLocation(name), val);
         }
 
-		// Set a uniform array of unsigned integers
+        // Set a uniform array of unsigned integers
         void setUniform(const std::string& name, GLsizei count, const GLuint* value) {
             glUniform1uiv(getUniformLocation(name), count, value);
         }
 
-		// Find and cache all uniform locations in the shader program
+        // Find and cache all uniform locations in the shader program
         void findUniformLocations(); 
 
         // Debugging utility
@@ -192,7 +192,7 @@ namespace cg
         // Debugging utility
         void printActiveUniformBlocks();
 
-		// Debugging utility
+        // Debugging utility
         void printActiveAttribs();
     };
 }

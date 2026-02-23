@@ -50,7 +50,7 @@ namespace
 namespace cg
 {
 
-	// Build (compile and link) the shader program
+    // Build (compile and link) the shader program
     void Program::build()
     {
         // If rebuilding, clean previous GL objects
@@ -70,7 +70,7 @@ namespace cg
         }
     }
 
-	// Clean up resources associated with the shader program
+    // Clean up resources associated with the shader program
     void Program::clean()
     {
         if (!handle)

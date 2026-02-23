@@ -109,10 +109,10 @@ namespace cg
                     std::to_string(result) +
                     ": Framebuffer is not complete.\n");
         }
-	}
+    }
 
-	void FBO::resetTextureDepthAsTarget(int width, int height)
-	{
+    void FBO::resetTextureDepthAsTarget(int width, int height)
+    {
         // Create and bind the framebuffer
         if (handle == 0)
             glGenFramebuffers(1, &handle);
@@ -123,7 +123,7 @@ namespace cg
             this->width = width;
             this->height = height;
 
-			GLuint texture;
+            GLuint texture;
             GLuint* tex = pTexture ? pTexture : &texture;
 
             // If caller provided storage for the texture id, remember the old one for cleanup
@@ -160,7 +160,7 @@ namespace cg
                     std::to_string(result) +
                     ": Framebuffer is not complete.\n");
         }
-	}
+    }
 
     // Configures the FBO for deferred rendering
     void FBO::resetDeferredAsTarget(int width, int height)
@@ -193,5 +193,5 @@ namespace cg
                 throw std::runtime_error(std::string("Error ") + std::to_string(result) +
                     ": Framebuffer is not complete.\n");
         }
-	}
+    }
 }

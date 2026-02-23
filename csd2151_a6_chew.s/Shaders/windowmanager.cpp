@@ -129,7 +129,7 @@ namespace
     }
 
 
-	// Get the real viewport x, y, w, h for a child window relatively 
+    // Get the real viewport x, y, w, h for a child window relatively 
     // the parent window with width W and height H.
     // Returns true if viewport is a full screen.
     bool xywh(const std::vector<int>& viewport, int W, int H, int& x, int& y, int& w, int& h)
@@ -445,7 +445,7 @@ namespace cg
                 pass.fbo.handle = 0;
             }
 
-			pass.renderShader.clean();
+            pass.renderShader.clean();
 
             for (auto& texture : textures)
                 texture.bind();
@@ -456,7 +456,7 @@ namespace cg
     void ManagedWindow::updateWindowTitle()
     {
         if (pParentWindow)
-			return; // Only update title for main windows
+            return; // Only update title for main windows
 
         auto& perf = context.performance;
         perf.frameCount++;
@@ -481,7 +481,7 @@ namespace cg
         }
     }
 
-	// Resize the window based on the viewport and parent window
+    // Resize the window based on the viewport and parent window
     void ManagedWindow::resize(int width, int height)
     {
         xywh(viewport, width, height, this->x, this->y, this->width, this->height);
@@ -491,9 +491,9 @@ namespace cg
             xywh(pass.viewport, this->width, this->height, pass.x, pass.y, pass.width, pass.height);
 
         glfwSetWindowPos(pWindow, this->x, this->y);
-		glfwSetWindowSize(pWindow, this->width, this->height);
+        glfwSetWindowSize(pWindow, this->width, this->height);
 
-		needUpdate = true;
+        needUpdate = true;
     }
 
     // Change the visible object in a scene
@@ -512,8 +512,7 @@ namespace cg
     // Special method for demo app to show a selected child window as a stand alone window
     void WindowManager::copyWindow(const ManagedWindow& window)
     {
-
-		ManagedWindow newindow(window);
+        ManagedWindow newindow(window);
         newindow.pWindow = nullptr;
         newindow.pParentWindow = nullptr;
         newindow.viewport = DEFAULT;
@@ -522,13 +521,13 @@ namespace cg
         newindow.width = 0;
         newindow.height = 0;
 
-		for (auto& pass : newindow.passes)
-            pass.viewport = { 0 };
+        for (auto& pass : newindow.passes)
+            pass.viewport = {};
 
         glfwShowWindow(addWindow(newindow, window.pWindow));
     }
 
-	// Core method to add a new window with full specifications
+    // Core method to add a new window with full specifications
     GLFWwindow* WindowManager::addWindow(const ManagedWindow& _window, GLFWwindow* pShareWindow /*= nullptr*/)
     {
         windows.push_back(_window);
@@ -549,6 +548,12 @@ namespace cg
                 window.y = 0;
                 window.width = WIDTH;
                 window.height = HEIGHT;
+            }
+            else  if (window.viewport.size() == 3)
+            {
+                GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+                xywh(window.viewport, mode->width, mode->height, window.x, window.y, window.width, window.height);
             }
             else if (window.viewport.size() == 4)
             {
@@ -605,7 +610,7 @@ namespace cg
             }
         });
 
-		// Size callback to handle window resizing
+        // Size callback to handle window resizing
         glfwSetWindowSizeCallback(window.pWindow, [](GLFWwindow* pWindow, int width, int height)
         {
             if (auto pManagedWindow = static_cast<cg::ManagedWindow*>(glfwGetWindowUserPointer(pWindow)))
@@ -629,7 +634,7 @@ namespace cg
             }
         });
 
-		// Key callback to handle keyboard input
+        // Key callback to handle keyboard input
         glfwSetKeyCallback(window.pWindow, [](GLFWwindow* pWindow, int key, int scancode, int action, int mods)
         {
             if (auto* pManagedWindow = static_cast<cg::ManagedWindow*>(glfwGetWindowUserPointer(pWindow)))
@@ -658,26 +663,32 @@ namespace cg
 
                         const std::string filename = "Screenshot_" + title + "_" +
                             std::to_string(pManagedWindow->width) + "x" +
-							std::to_string(pManagedWindow->height) + ".bmp";
+                            std::to_string(pManagedWindow->height) + ".bmp";
                         if (saveWindowScreenshot(pManagedWindow, filename))
                             std::cout << "Saved screenshot to " << filename << std::endl;
                     }
                     else
                     {
+                        bool propagate = false;
                         if (pManagedWindow->keyCallback)
                         {
                             glfwMakeContextCurrent(pManagedWindow->pWindow);
                             if (pManagedWindow->keyCallback(pManagedWindow, key))
+                                propagate = true;
+                        }
+                        else
+                            propagate = true;
+
+                        if (propagate)
+                        {
+                            // Propagate the event to the parent window if handled
+                            if (pManagedWindow->pParentWindow)
                             {
-								// Propagate the event to the parent window if handled
-                                if (pManagedWindow->pParentWindow)
+                                auto* pManagedParentWindow = static_cast<cg::ManagedWindow*>(glfwGetWindowUserPointer(pManagedWindow->pParentWindow));
+                                if (pManagedParentWindow->keyCallback)
                                 {
-                                    auto* pManagedParentWindow = static_cast<cg::ManagedWindow*>(glfwGetWindowUserPointer(pManagedWindow->pParentWindow));
-                                    if (pManagedParentWindow->keyCallback)
-                                    {
-                                        glfwMakeContextCurrent(pManagedParentWindow->pWindow);
-                                        pManagedParentWindow->keyCallback(pManagedParentWindow, key);
-                                    }
+                                    glfwMakeContextCurrent(pManagedParentWindow->pWindow);
+                                    pManagedParentWindow->keyCallback(pManagedParentWindow, key);
                                 }
                             }
                         }
@@ -688,7 +699,7 @@ namespace cg
             }
         });
 
-		// Mouse button callback to handle mouse clicks
+        // Mouse button callback to handle mouse clicks
         glfwSetMouseButtonCallback(window.pWindow, [](GLFWwindow* pWindow, int button, int action, int mods)
         {
             // Handle left mouse button
@@ -760,7 +771,7 @@ namespace cg
             }
         });
 
-		// Cursor position callback to handle mouse movement
+        // Cursor position callback to handle mouse movement
         glfwSetCursorPosCallback(window.pWindow, [](GLFWwindow* pWindow, double xpos, double ypos)
         {
 
@@ -850,7 +861,7 @@ namespace cg
         window.computeShader.build();
 
         for (auto& pass : window.passes)
-			pass.renderShader.build();
+            pass.renderShader.build();
 
         glfwSetWindowUserPointer(window.pWindow, &window);
 
@@ -928,6 +939,10 @@ namespace cg
                 for (; i < window.passes.size(); ++i)
                 {
                     Pass& pass = window.passes[i];
+
+                    // Skip when minimized
+                    if (pass.width == 0 || pass.height == 0)
+                        continue;
 
                     if (window.initCallback)
                         window.initCallback(&window, i);
@@ -1031,11 +1046,6 @@ namespace cg
                             }
 
                     pass.renderShader.disuse();
-
-
-                    if (window.initCallback)
-                        window.initCallback(&window, i);
-
                 }
                 // Swap front and back buffers
                 glfwSwapBuffers(window.pWindow);
@@ -1050,7 +1060,7 @@ namespace cg
         }
     }
 
-	// Clean up all managed windows
+    // Clean up all managed windows
     void WindowManager::cleanup() 
     {
         // Clean up windows before GLFW termination
@@ -1059,7 +1069,7 @@ namespace cg
         windows.clear();
     }
 
-	// Resize all child windows of a given parent window
+    // Resize all child windows of a given parent window
     void WindowManager::resizeChildren(GLFWwindow* pWindow, int width, int height)
     { 
         for (auto& window : windows)

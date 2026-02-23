@@ -51,8 +51,8 @@ namespace cg
     #define MATERIAL_REFLECT_REFRACT\
         {\
             { "material.color", { 0.5f, 0.5f, 0.5f } },\
-            { "material.reflectionFactor", { 1.0f } },\
-            { "material.eta", { 1.0f } },\
+            { "material.reflectionFactor", { 0.9f } },\
+            { "material.eta", { 0.94f } },\
             { "material.effect", { 0.0f } }\
         }
 

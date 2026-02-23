@@ -32,12 +32,12 @@ namespace cg
         GLuint channel;
         GLuint* pTexture;     // Pointer to the associated texture
 
-		int width;            // Width of the framebuffer
-		int height;           // Height of the framebuffer
+        int width;            // Width of the framebuffer
+        int height;           // Height of the framebuffer
 
         // Constructor to initialize the FBO with specific attributes
         FBO(Type type = Default, GLuint channel = GL_TEXTURE0, GLuint* pTexture = nullptr)
-			: type{ type }, handle{ 0 }, channel{ channel }, pTexture{ pTexture }, width{ 0 }, height{ 0 }
+            : type{ type }, handle{ 0 }, channel{ channel }, pTexture{ pTexture }, width{ 0 }, height{ 0 }
         {
         }
 
@@ -62,5 +62,5 @@ namespace cg
 
         // Configures the FBO for deferred rendering
         void resetDeferredAsTarget(int width, int height);
-	};
+    };
 }
