@@ -80,16 +80,10 @@ namespace cg
             float alpha = glm::asin((target.y - position.y) / r);
             float betta = std::atan2f((target.x - position.x), (target.z - position.z));
 
-            // Adjust angles based on cursor offset
-            if (yoffset < 0.0)
-                alpha += -0.02f;
-            else if (yoffset > 0.0)
-                alpha += 0.02f;
-
-            if (xoffset < 0.0)
-                betta += -0.05f;
-            else if (xoffset > 0.0)
-                betta += 0.05f;
+            // Adjust angles proportionally to cursor offset
+            const float sensitivity = 0.005f;
+            alpha -= static_cast<float>(yoffset) * sensitivity;
+            betta -= static_cast<float>(xoffset) * sensitivity;
 
             // Clamp vertical angle
             alpha = glm::clamp(alpha, -PI05 + 0.01f, PI05 - 0.01f);

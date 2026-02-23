@@ -715,6 +715,10 @@ namespace cg
 
                         // Store the press position
                         glfwGetCursorPos(pWindow, &pManagedWindow->context.input.pressx, &pManagedWindow->context.input.pressy);
+
+                        // Initialize drag origin to press position to prevent jump on first drag
+                        pManagedWindow->context.input.dragx = pManagedWindow->context.input.pressx;
+                        pManagedWindow->context.input.dragy = pManagedWindow->context.input.pressy;
                     }
                 }
                 else if (action == GLFW_RELEASE)
