@@ -145,8 +145,10 @@ vec3 blinnPhong(vec3 position, vec3 normal, Light light, Material material, mat4
     vec3 N = normalize(normal);
     vec3 H = normalize(L + Vdir);
 
-    // Ambient
+    // Ambient (use Ka if set, otherwise a small fill from Kd)
     vec3 ambient = light.La * material.Ka;
+    if (length(ambient) < 0.001f)
+        ambient = 0.15f * material.Kd;
 
     // Diffuse
     float NdotL = max(dot(N, L), 0.0f);
@@ -184,8 +186,10 @@ vec3 blinnPhongCartoon(vec3 position, vec3 normal, Light light, Material materia
     vec3 N = normalize(normal);
     vec3 H = normalize(L + Vdir);
 
-    // Ambient
+    // Ambient (use Ka if set, otherwise a small fill from Kd)
     vec3 ambient = light.La * material.Ka;
+    if (length(ambient) < 0.001f)
+        ambient = 0.15f * material.Kd;
 
     // Diffuse with cartoon quantization
     float cosAngle = max(dot(L, N), 0.0f);
@@ -233,9 +237,6 @@ void main()
         // Subtle checkerboard texture blend
         vec3 tex = checkerboardTexture(TexCoord, 10.0f);
         color = mix(shade, tex, 0.1f);
-
-        // Gamma correction
-        color = pow(color, vec3(1.0f / 2.2f));
     }
     // ---- Effect 1: Discard with circular holes (custom pattern) ----
     else if (effectId == 1)
@@ -269,6 +270,9 @@ void main()
         // Blend lighting with checkerboard pattern
         color = phong * mix(vec3(0.3f), vec3(1.0f), checker);
     }
+
+    // ---- Gamma correction (applied to all effects) ----
+    color = pow(color, vec3(1.0f / 2.2f));
 
     // ---- Apply Fog ----
     float fogDist = length(Position);
