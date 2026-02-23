@@ -23,6 +23,34 @@
 #define ENABLE      true
 #define DISABLE     false
 
+#define DEMOOBJECTS_A8 \
+    {\
+        {\
+            PLANE,\
+            MATERIAL_CHECKERBOARD,\
+            glm::translate(glm::scale(glm::mat4(1.0f), {3.0f, 1.0f, 3.0f}), {0.0f, -1.1f, 0.0f}),\
+            VISIBLE\
+        },\
+        {\
+            SPHERE,\
+            MATERIAL_PBR_PHONG,\
+            glm::translate(glm::mat4(1.0f), {2.5f, 0.0f, 0.0f}),\
+            VISIBLE\
+        },\
+        {\
+            TORUS,\
+            MATERIAL_CARTOON,\
+            NOTRANSFORM,\
+            VISIBLE\
+        },\
+        {\
+            TEAPOT,\
+            MATERIAL_DISCARD,\
+            glm::translate(glm::mat4(1.0f), {-2.5f, 0.0f, 0.0f}),\
+            VISIBLE\
+        }\
+    }
+
 #define DEMOOBJECTS_ENVIRONMENTMAPPING \
     {\
         {\

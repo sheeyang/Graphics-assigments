@@ -3,10 +3,10 @@
 \author Vadim Surov (vsurov@digipen.edu)
 \co-author Chew Shee Yang (chew.s@digipen.edu)
 \par Course: CSD2151
-\par Assignment: 5 (Environment Mapping)
-\date 02/02/2026 (MM/DD/YYYY)
+\par Assignment: 8 (Unified Rendering)
+\date 02/23/2026 (MM/DD/YYYY)
 \brief
-    Application entry point for the Environment Mapping assignment. Implements a menu
+    Application entry point for the Unified Rendering assignment. Implements a menu
     system with subwindows that can be opened in separate windows on double-click.
 
     Features:
@@ -16,6 +16,7 @@
     - Subwindow 3: Assignment 3 (Ray Tracing) demo
     - Subwindow 4: Assignment 4 (Blinn-Phong Shading) demo
     - Subwindow 5: Assignment 5 (Environment Mapping) demo
+    - Subwindow 6: Assignment 8 (Unified Rendering) demo
     - Double-click on subwindow to open in new actual window
     - Interactable subwindows with full keyboard/mouse support
 
@@ -38,7 +39,7 @@ const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 12 subwindows max
 const int GRID_GAP = 10;
 
 // Number of active subwindows
-const int NUM_SUBWINDOWS = 5;
+const int NUM_SUBWINDOWS = 6;
 
 // Tab indicator constants (from Assignment 1)
 const int NUM_TABS = 3;
@@ -134,7 +135,7 @@ int main(int argc, char **argv)
         pMainWindow = windowManager.addWindow({cg::State::SHOW,               // State (SHOW, HIDE)
                                                nullptr,                       // Parent window (nullptr for top-level window)
                                                {0, 0, 1024, 768},             // Viewport - x, y, width, height
-                                               "CSD2151 Assignment 5 - Menu", // Title
+                                               "CSD2151 Assignment 8 - Menu", // Title
                                                {0.15f, 0.15f, 0.2f, 1.0f},    // Background color (dark blue-grey)
                                                NONE,                          // Textures
                                                NONE,                          // Compute shader
@@ -160,7 +161,7 @@ int main(int argc, char **argv)
                                                    if (focused)
                                                    {
                                                        std::cout << std::endl;
-                                                       std::cout << "CSD2151 Assignment 5 - Menu (version "
+                                                       std::cout << "CSD2151 Assignment 8 - Menu (version "
                                                                  << __DATE__ << " " << __TIME__ << ")";
                                                        std::cout << std::endl
                                                                  << R"(
@@ -181,6 +182,7 @@ Subwindows:
    - Subwindow 3: Assignment 3 (Ray Tracing) - Earth, Sun, Moon system
    - Subwindow 4: Assignment 4 (Blinn-Phong) - 3D shaded objects with lighting
    - Subwindow 5: Assignment 5 (Environment Mapping) - Skybox with reflection/refraction
+   - Subwindow 6: Assignment 8 (Unified Rendering) - PBR, Cartoon, Discard, Fog
 )";
                                                    }
                                                },
@@ -963,6 +965,230 @@ Subwindows:
                                                       }},
                                                      pMainWindow));
 
+        // ====================================================================
+        // SUBWINDOW 6: Assignment 8 (Unified Rendering)
+        // ====================================================================
+        // Unified rendering demo with:
+        // - Pass 0: Night sky skybox with cubemap texture
+        // - Pass 1: Scene objects with PBR, cartoon, discard, checkerboard effects
+        // - Fog effect to hide the horizon line
+        // - Camera orbiting (O) and walking (W) modes
+        #define FOG_COLOR { 0.05f, 0.05f, 0.08f, 1.0f }
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                                // State
+                                                      pMainWindow,                                    // Parent window
+                                                      {5, GRID_SIZE, GRID_GAP},                       // Grid position: element 5 in grid
+                                                      "Assignment 8 - Unified Rendering",             // Title
+                                                      {0.05f, 0.05f, 0.08f, 1.0f},                    // Background color (dark, matches fog)
+                                                      {{"../NightSky/night_posx.png",                 // Cubemap textures
+                                                        "../NightSky/night_negx.png",
+                                                        "../NightSky/night_posy.png",
+                                                        "../NightSky/night_negy.png",
+                                                        "../NightSky/night_posz.png",
+                                                        "../NightSky/night_negz.png"}},
+                                                      NONE,                                           // Compute shader
+                                                      {                                               // Rendering passes
+                                                       {                                              // Pass 0 - Skybox
+                                                        {NOMARGIN},                                   // Viewport
+                                                        NONE,                                         // Background color
+                                                        ENABLE,                                       // Depth test
+                                                        {{SKYBOX}},                                   // Objects - skybox cube
+                                                        {{{0.0f, 1.0f, 4.0f}}},                       // Camera
+                                                        NONE,                                         // Lights
+                                                        DEFAULT,                                      // Rendering target
+                                                        {
+        // Shaders - Assignment 8 skybox
+#include "Shaders/ShaderA8Sky.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA8Sky.frag.glsl"
+                                                        }},
+                                                       {                                              // Pass 1 - Scene objects
+                                                        {NOMARGIN},                                   // Viewport
+                                                        NONE,                                         // Background color
+                                                        ENABLE,                                       // Depth test
+                                                        DEMOOBJECTS_A8,                               // Objects
+                                                        {{{0.0f, 1.0f, 4.0f}}},                       // Camera - same as skybox
+                                                        {{{0.0f, 3.0f, 5.0f}}},                       // Lights
+                                                        DEFAULT,                                      // Rendering target
+                                                        {
+        // Shaders - Assignment 8 scene
+#include "Shaders/ShaderA8.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA8.frag.glsl"
+                                                        }}},
+
+                                                      // FocusCallback - Print help info
+                                                      [](cg::ManagedWindow *pWindow, int focused)
+                                                      {
+                                                          if (focused)
+                                                          {
+                                                              const char *camModes[] = {"Orbiting", "Walking"};
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Subwindow 6 (Assignment 8 - Unified Rendering)" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "Unified Rendering Demo:" << std::endl;
+                                                              std::cout << "- Night sky skybox (cubemap texture)" << std::endl;
+                                                              std::cout << "- PBR sphere (red, physically based)" << std::endl;
+                                                              std::cout << "- Cartoon torus (blue, toon shading)" << std::endl;
+                                                              std::cout << "- Discard teapot (green, circular holes)" << std::endl;
+                                                              std::cout << "- Checkerboard floor plane (lit)" << std::endl;
+                                                              std::cout << "- Distance-based fog effect" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "Camera Mode: " << camModes[pWindow->context.intparam[0]] << std::endl;
+                                                              std::cout << "Fog Max Distance: " << pWindow->context.floatparam[1] << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "- W key: Switch to Walking camera mode" << std::endl;
+                                                              std::cout << "- O key: Switch to Orbiting camera mode" << std::endl;
+                                                              std::cout << "- Shift + Drag: Move light position" << std::endl;
+                                                              std::cout << "- Shift + Scroll: Adjust light distance" << std::endl;
+                                                              std::cout << "- Alt + Scroll: Adjust fog thickness (5-30)" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "ORBITING MODE (default):" << std::endl;
+                                                              std::cout << "  - Mouse drag: Orbit camera around the scene center" << std::endl;
+                                                              std::cout << "  - Scroll: Zoom in/out (move closer/farther from center)" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "WALKING MODE:" << std::endl;
+                                                              std::cout << "  - Mouse drag horizontally: Turn camera left/right" << std::endl;
+                                                              std::cout << "  - Mouse drag vertically: Look up/down" << std::endl;
+                                                              std::cout << "  - Scroll: Walk forward/backward" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
+                                                      },
+
+                                                      // InitCallback - Set up uniforms for both passes
+                                                      [](cg::ManagedWindow *pWindow, int pass)
+                                                      {
+                                                          // Initialize parameters on first call
+                                                          if (pass == -1)
+                                                          {
+                                                              pWindow->context.intparam[0] = 0;        // Camera mode: 0=orbiting, 1=walking
+                                                              pWindow->context.floatparam[0] = 2.0f;   // fog.minDist
+                                                              pWindow->context.floatparam[1] = 15.0f;  // fog.maxDist
+                                                              pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f); // fog.color
+
+                                                              // Set fog uniforms on scene shader (pass 1)
+                                                              pWindow->passes[1].renderShader.use();
+                                                              pWindow->passes[1].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
+                                                              pWindow->passes[1].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+                                                              pWindow->passes[1].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+
+                                                              // Set fog uniforms on skybox shader (pass 0) for horizon blending
+                                                              pWindow->passes[0].renderShader.use();
+                                                              pWindow->passes[0].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
+                                                              pWindow->passes[0].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+                                                              pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                          }
+
+                                                          if (pass == 0 || pass == 1)
+                                                          {
+                                                              auto &shader = pWindow->passes[pass].renderShader;
+                                                              shader.use();
+
+                                                              auto &camera = pWindow->passes[pass].cameras[0];
+
+                                                              float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                 ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                 : 1.0f;
+                                                              glm::mat4 V = camera.getLookAt();
+                                                              glm::mat4 P = camera.getPerspective(aspect);
+
+                                                              shader.setUniform("V", V);
+                                                              shader.setUniform("P", P);
+
+                                                              if (pass == 0)
+                                                              {
+                                                                  // Bind cubemap texture unit 0 for skybox
+                                                                  shader.setUniform("CubeMapTex", 0);
+                                                              }
+                                                          }
+                                                      },
+
+                                                      // SizeCallback
+                                                      [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                      // KeyCallback - W/O to switch camera mode
+                                                      [](cg::ManagedWindow *pWindow, int key)
+                                                      {
+                                                          if (key == GLFW_KEY_W)
+                                                          {
+                                                              pWindow->passes[0].cameras[0].setType(cg::CameraType::WALKING);
+                                                              pWindow->passes[1].cameras[0].setType(cg::CameraType::WALKING);
+                                                              pWindow->context.intparam[0] = 1;
+                                                              std::cout << "Camera mode: Walking" << std::endl;
+                                                              std::cout << "  Drag horizontally to turn, vertically to look up/down" << std::endl;
+                                                              std::cout << "  Scroll to walk forward/backward" << std::endl;
+                                                              return false;
+                                                          }
+                                                          else if (key == GLFW_KEY_O)
+                                                          {
+                                                              pWindow->passes[0].cameras[0].setType(cg::CameraType::ORBITING);
+                                                              pWindow->passes[1].cameras[0].setType(cg::CameraType::ORBITING);
+                                                              pWindow->context.intparam[0] = 0;
+                                                              std::cout << "Camera mode: Orbiting" << std::endl;
+                                                              std::cout << "  Drag to orbit around scene, scroll to zoom" << std::endl;
+                                                              return false;
+                                                          }
+                                                          return true;
+                                                      },
+
+                                                      // MousebuttonCallback
+                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
+                                                      {
+                                                          // Mouse button handling done via cursor callback
+                                                      },
+
+                                                      // ScrollCallback - Zoom, light, or fog adjustment
+                                                      [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          if (mods & GLFW_MOD_SHIFT)
+                                                          {
+                                                              // Shift + Scroll: Adjust light distance
+                                                              pWindow->passes[1].lights[0].onScroll(xoffset, yoffset);
+                                                          }
+                                                          else if (mods & GLFW_MOD_ALT)
+                                                          {
+                                                              // Alt + Scroll: Adjust fog max distance
+                                                              pWindow->context.floatparam[1] += (yoffset > 0.0 ? 1.0f : -1.0f);
+                                                              pWindow->context.floatparam[1] = glm::clamp(pWindow->context.floatparam[1], 5.0f, 30.0f);
+
+                                                              // Update fog uniforms on both shaders
+                                                              pWindow->passes[1].renderShader.use();
+                                                              pWindow->passes[1].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+                                                              pWindow->passes[0].renderShader.use();
+                                                              pWindow->passes[0].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+
+                                                              std::cout << "Fog Max Distance: " << pWindow->context.floatparam[1] << std::endl;
+                                                          }
+                                                          else
+                                                          {
+                                                              // Normal scroll: Zoom camera (both passes)
+                                                              pWindow->passes[0].cameras[0].onScroll(xoffset, yoffset);
+                                                              pWindow->passes[1].cameras[0].onScroll(xoffset, yoffset);
+                                                          }
+                                                      },
+
+                                                      // CursorposCallback - Orbit/walk camera or move light
+                                                      [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          if (pWindow->context.input.lbutton_down)
+                                                          {
+                                                              if (mods & GLFW_MOD_SHIFT)
+                                                              {
+                                                                  // Shift + Drag: Move light
+                                                                  pWindow->passes[1].lights[0].onCursor(xoffset, yoffset);
+                                                              }
+                                                              else
+                                                              {
+                                                                  // Normal drag: Orbit/walk camera (both passes)
+                                                                  pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
+                                                                  pWindow->passes[1].cameras[0].onCursor(xoffset, yoffset);
+                                                              }
+                                                          }
+                                                      }},
+                                                     pMainWindow));
+
         // Initialize camera positions for ray casting
         // Set initial camera position to center of map
         for (auto &window : windowManager.windows)
@@ -1677,6 +1903,207 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                              {
                                                                  pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
                                                                  pWindow->passes[1].cameras[0].onCursor(xoffset, yoffset);
+                                                             }
+                                                         }},
+                                                        pMainWindow);
+
+        if (pDetached)
+        {
+            detachedWindows.push_back(pDetached);
+            glfwShowWindow(pDetached);
+            glfwFocusWindow(pDetached);
+        }
+    }
+    else if (subwindowIndex == 5)
+    {
+        // Create detached Assignment 8 window (Unified Rendering)
+        GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
+                                                         nullptr,                                        // No parent - standalone window
+                                                         {0, 0, 800, 600},                               // x, y, width, height
+                                                         "Assignment 8 - Unified Rendering (Detached)",  // Title
+                                                         {0.05f, 0.05f, 0.08f, 1.0f},                    // Background color
+                                                         {{"../NightSky/night_posx.png",                 // Cubemap textures
+                                                           "../NightSky/night_negx.png",
+                                                           "../NightSky/night_posy.png",
+                                                           "../NightSky/night_negy.png",
+                                                           "../NightSky/night_posz.png",
+                                                           "../NightSky/night_negz.png"}},
+                                                         NONE,                                           // Compute shader
+                                                         {                                               // Rendering passes
+                                                          {                                              // Pass 0 - Skybox
+                                                           {NOMARGIN},
+                                                           NONE,
+                                                           ENABLE,
+                                                           {{SKYBOX}},
+                                                           {{{0.0f, 1.0f, 4.0f}}},
+                                                           NONE,
+                                                           DEFAULT,
+                                                           {
+#include "Shaders/ShaderA8Sky.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA8Sky.frag.glsl"
+                                                           }},
+                                                          {                                              // Pass 1 - Scene
+                                                           {NOMARGIN},
+                                                           NONE,
+                                                           ENABLE,
+                                                           DEMOOBJECTS_A8,
+                                                           {{{0.0f, 1.0f, 4.0f}}},
+                                                           {{{0.0f, 3.0f, 5.0f}}},
+                                                           DEFAULT,
+                                                           {
+#include "Shaders/ShaderA8.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA8.frag.glsl"
+                                                           }}},
+
+                                                         // FocusCallback
+                                                         [](cg::ManagedWindow *pWindow, int focused)
+                                                         {
+                                                             if (focused)
+                                                             {
+                                                                 const char *camModes[] = {"Orbiting", "Walking"};
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "Detached Assignment 8 - Unified Rendering" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "Camera Mode: " << camModes[pWindow->context.intparam[0]] << std::endl;
+                                                                 std::cout << "Fog Max Distance: " << pWindow->context.floatparam[1] << std::endl;
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "CONTROLS:" << std::endl;
+                                                                 std::cout << "- W key: Switch to Walking camera mode" << std::endl;
+                                                                 std::cout << "- O key: Switch to Orbiting camera mode" << std::endl;
+                                                                 std::cout << "- Shift + Drag: Move light position" << std::endl;
+                                                                 std::cout << "- Shift + Scroll: Adjust light distance" << std::endl;
+                                                                 std::cout << "- Alt + Scroll: Adjust fog thickness (5-30)" << std::endl;
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "ORBITING MODE (default):" << std::endl;
+                                                                 std::cout << "  - Mouse drag: Orbit camera around the scene center" << std::endl;
+                                                                 std::cout << "  - Scroll: Zoom in/out (move closer/farther)" << std::endl;
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "WALKING MODE:" << std::endl;
+                                                                 std::cout << "  - Mouse drag horizontally: Turn camera left/right" << std::endl;
+                                                                 std::cout << "  - Mouse drag vertically: Look up/down" << std::endl;
+                                                                 std::cout << "  - Scroll: Walk forward/backward" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                             }
+                                                         },
+
+                                                         // InitCallback
+                                                         [](cg::ManagedWindow *pWindow, int pass)
+                                                         {
+                                                             if (pass == -1)
+                                                             {
+                                                                 pWindow->context.intparam[0] = 0;        // Camera mode: 0=orbiting
+                                                                 pWindow->context.floatparam[0] = 2.0f;   // fog.minDist
+                                                                 pWindow->context.floatparam[1] = 15.0f;  // fog.maxDist
+                                                                 pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f);
+
+                                                                 pWindow->passes[1].renderShader.use();
+                                                                 pWindow->passes[1].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
+                                                                 pWindow->passes[1].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+                                                                 pWindow->passes[1].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+
+                                                                 pWindow->passes[0].renderShader.use();
+                                                                 pWindow->passes[0].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
+                                                                 pWindow->passes[0].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+                                                                 pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                             }
+
+                                                             if (pass == 0 || pass == 1)
+                                                             {
+                                                                 auto &shader = pWindow->passes[pass].renderShader;
+                                                                 shader.use();
+
+                                                                 auto &camera = pWindow->passes[pass].cameras[0];
+
+                                                                 float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                    ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                    : 1.0f;
+                                                                 glm::mat4 V = camera.getLookAt();
+                                                                 glm::mat4 P = camera.getPerspective(aspect);
+
+                                                                 shader.setUniform("V", V);
+                                                                 shader.setUniform("P", P);
+
+                                                                 if (pass == 0)
+                                                                 {
+                                                                     shader.setUniform("CubeMapTex", 0);
+                                                                 }
+                                                             }
+                                                         },
+
+                                                         // SizeCallback
+                                                         [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                         // KeyCallback
+                                                         [](cg::ManagedWindow *pWindow, int key)
+                                                         {
+                                                             if (key == GLFW_KEY_W)
+                                                             {
+                                                                 pWindow->passes[0].cameras[0].setType(cg::CameraType::WALKING);
+                                                                 pWindow->passes[1].cameras[0].setType(cg::CameraType::WALKING);
+                                                                 pWindow->context.intparam[0] = 1;
+                                                                 std::cout << "Camera mode: Walking" << std::endl;
+                                                                 std::cout << "  Drag horizontally to turn, vertically to look up/down" << std::endl;
+                                                                 std::cout << "  Scroll to walk forward/backward" << std::endl;
+                                                                 return false;
+                                                             }
+                                                             else if (key == GLFW_KEY_O)
+                                                             {
+                                                                 pWindow->passes[0].cameras[0].setType(cg::CameraType::ORBITING);
+                                                                 pWindow->passes[1].cameras[0].setType(cg::CameraType::ORBITING);
+                                                                 pWindow->context.intparam[0] = 0;
+                                                                 std::cout << "Camera mode: Orbiting" << std::endl;
+                                                                 std::cout << "  Drag to orbit around scene, scroll to zoom" << std::endl;
+                                                                 return false;
+                                                             }
+                                                             return true;
+                                                         },
+
+                                                         // MousebuttonCallback
+                                                         [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos) {},
+
+                                                         // ScrollCallback
+                                                         [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             if (mods & GLFW_MOD_SHIFT)
+                                                             {
+                                                                 pWindow->passes[1].lights[0].onScroll(xoffset, yoffset);
+                                                             }
+                                                             else if (mods & GLFW_MOD_ALT)
+                                                             {
+                                                                 pWindow->context.floatparam[1] += (yoffset > 0.0 ? 1.0f : -1.0f);
+                                                                 pWindow->context.floatparam[1] = glm::clamp(pWindow->context.floatparam[1], 5.0f, 30.0f);
+
+                                                                 pWindow->passes[1].renderShader.use();
+                                                                 pWindow->passes[1].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+                                                                 pWindow->passes[0].renderShader.use();
+                                                                 pWindow->passes[0].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+
+                                                                 std::cout << "Fog Max Distance: " << pWindow->context.floatparam[1] << std::endl;
+                                                             }
+                                                             else
+                                                             {
+                                                                 pWindow->passes[0].cameras[0].onScroll(xoffset, yoffset);
+                                                                 pWindow->passes[1].cameras[0].onScroll(xoffset, yoffset);
+                                                             }
+                                                         },
+
+                                                         // CursorposCallback
+                                                         [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             if (pWindow->context.input.lbutton_down)
+                                                             {
+                                                                 if (mods & GLFW_MOD_SHIFT)
+                                                                 {
+                                                                     pWindow->passes[1].lights[0].onCursor(xoffset, yoffset);
+                                                                 }
+                                                                 else
+                                                                 {
+                                                                     pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
+                                                                     pWindow->passes[1].cameras[0].onCursor(xoffset, yoffset);
+                                                                 }
                                                              }
                                                          }},
                                                         pMainWindow);
