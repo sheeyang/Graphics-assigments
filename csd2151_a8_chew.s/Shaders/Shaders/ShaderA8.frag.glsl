@@ -9,7 +9,7 @@ R"(
     Unified fragment shader for Assignment 8 - scene rendering.
     Implements multiple rendering effects selected by material.effect:
       0.0 = Physically Based Rendering (PBR) using GGX microfacet model
-      1.0 = Discard effect with circular holes (custom pattern)
+      1.0 = Discard effect with sine-wave stripe cutouts (custom pattern)
       2.0 = Cartoon/toon shading with quantized lighting bands
       3.0 = Checkerboard textured surface with Blinn-Phong lighting
     All effects include distance-based fog for atmospheric depth.
@@ -238,19 +238,23 @@ void main()
         vec3 tex = checkerboardTexture(TexCoord, 10.0f);
         color = mix(shade, tex, 0.1f);
     }
-    // ---- Effect 1: Discard with circular holes (custom pattern) ----
+    // ---- Effect 1: Discard with sine-wave stripe cutouts ----
     else if (effectId == 1)
     {
-        // Create a grid of circular holes
-        vec2 cell = fract(TexCoord * 8.0f);
-        float dist = distance(cell, vec2(0.5f));
+        // Sine-wave bands: U drives the wave offset, V determines band position.
+        // fract maps each period to [0,1); fragments below 'threshold' are cut away,
+        // producing flowing wavy gaps across the surface.
+        float freq      = 12.0f; // Number of wave cycles across the surface
+        float amplitude = 0.25f; // How much the wave displaces the cut line
+        float threshold = 0.35f; // Fraction of each period that is discarded
 
-        // Discard fragments inside circles (creates round holes)
-        if (dist < 0.3f)
+        float wave = fract(TexCoord.y * freq + sin(TexCoord.x * freq) * amplitude);
+
+        if (wave < threshold)
             discard;
 
         // Render surviving fragments with Blinn-Phong
-        // Invert normal if back-facing for correct lighting through holes
+        // Invert normal if back-facing for correct lighting through gaps
         if (!gl_FrontFacing)
             n = -n;
 

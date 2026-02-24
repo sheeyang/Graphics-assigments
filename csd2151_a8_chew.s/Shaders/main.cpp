@@ -1031,7 +1031,7 @@ Subwindows:
                                                               std::cout << "- Night sky skybox (cubemap texture)" << std::endl;
                                                               std::cout << "- PBR sphere (red, physically based)" << std::endl;
                                                               std::cout << "- Cartoon torus (blue, toon shading)" << std::endl;
-                                                              std::cout << "- Discard teapot (green, circular holes)" << std::endl;
+                                                              std::cout << "- Discard teapot (green, sine-wave stripe cutouts)" << std::endl;
                                                               std::cout << "- Checkerboard floor plane (lit)" << std::endl;
                                                               std::cout << "- Distance-based fog effect" << std::endl;
                                                               std::cout << std::endl;
