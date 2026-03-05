@@ -20,6 +20,8 @@ R"(
 uniform sampler2D EdgeTex;      // Edge detection result (Pass 4)
 uniform sampler2D CartoonTex;   // Cartoon shaded scene (Pass 5)
 uniform vec2 iResolution;       // Viewport resolution
+uniform float AlphaFactor;      // Edge blending strength (0.0 - 1.0)
+uniform int EdgeEnabled;        // Edge filter toggle (0=off, 1=on)
 
 layout(location=0) out vec4 FragColor;
 
@@ -31,10 +33,19 @@ void main()
     float edgeStrength = texture(EdgeTex, uv).r;
     vec3 cartoonColor = texture(CartoonTex, uv).rgb;
 
-    // Composite: multiply cartoon color by inverse of edge strength
-    // Where edges are detected (edgeStrength = 1.0), output is black (outlines)
-    // Where no edges (edgeStrength = 0.0), output is the cartoon color
-    vec3 finalColor = cartoonColor * (1.0f - edgeStrength);
+    vec3 finalColor;
+    if (EdgeEnabled == 1)
+    {
+        // Edge filter ON: apply outlines modulated by AlphaFactor
+        // Where edges detected (edgeStrength=1), darken by AlphaFactor
+        // Where no edges (edgeStrength=0), show cartoon color
+        finalColor = cartoonColor * (1.0f - edgeStrength * AlphaFactor);
+    }
+    else
+    {
+        // Edge filter OFF: show cartoon shading only (no outlines)
+        finalColor = cartoonColor;
+    }
 
     FragColor = vec4(finalColor, 1.0f);
 }

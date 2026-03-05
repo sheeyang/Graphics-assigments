@@ -1293,46 +1293,33 @@ Subwindows:
                                                       {
                                                           if (focused)
                                                           {
-                                                              const char *camModes[] = {"Orbiting", "Walking"};
+                                                              const char *blurStates[] = {"OFF", "ON"};
+                                                              const char *edgeStates[] = {"OFF", "ON"};
                                                               std::cout << std::endl;
                                                               std::cout << "========================================" << std::endl;
                                                               std::cout << "Subwindow 7 (Assignment 9 - Cel-Shading)" << std::endl;
                                                               std::cout << "========================================" << std::endl;
                                                               std::cout << std::endl;
                                                               std::cout << "6-Pass Cel-Shading Pipeline:" << std::endl;
-                                                              std::cout << "  Pass 1: Blinn-Phong shading (captures geometry/lighting for edge detection)" << std::endl;
-                                                              std::cout << "  Pass 2: Vertical Gaussian blur (reduces noise for cleaner edge detection)" << std::endl;
-                                                              std::cout << "  Pass 3: Horizontal Gaussian blur (completes separable blur, smooths gradients)" << std::endl;
-                                                              std::cout << "  Pass 4: Sobel edge detection (identifies boundaries via luminance gradients)" << std::endl;
-                                                              std::cout << "  Pass 5: Cartoon shading (quantized lighting for flat cel-shaded look)" << std::endl;
-                                                              std::cout << "  Pass 6: Final composite (blends edges over cartoon shading)" << std::endl;
+                                                              std::cout << "  Pass 1: Blinn-Phong shading" << std::endl;
+                                                              std::cout << "  Pass 2: Vertical Gaussian blur" << std::endl;
+                                                              std::cout << "  Pass 3: Horizontal Gaussian blur" << std::endl;
+                                                              std::cout << "  Pass 4: Sobel edge detection" << std::endl;
+                                                              std::cout << "  Pass 5: Cartoon shading" << std::endl;
+                                                              std::cout << "  Pass 6: Final composite" << std::endl;
                                                               std::cout << std::endl;
-                                                              std::cout << "Scene Objects:" << std::endl;
-                                                              std::cout << "  - PBR sphere (red), Cartoon torus (blue), Discard teapot (green)" << std::endl;
-                                                              std::cout << "  - Checkerboard floor plane" << std::endl;
-                                                              std::cout << "  - All objects receive both Blinn-Phong and cartoon shading" << std::endl;
-                                                              std::cout << "  - Distance-based fog blends to dark background" << std::endl;
-                                                              std::cout << std::endl;
-                                                              std::cout << "Camera Mode: " << camModes[pWindow->context.intparam[0]] << std::endl;
+                                                              std::cout << "Blur Filter: " << blurStates[pWindow->context.intparam[1]] << std::endl;
+                                                              std::cout << "Edge Filter: " << edgeStates[pWindow->context.intparam[2]] << std::endl;
                                                               std::cout << "Edge Threshold: " << pWindow->context.floatparam[2] << std::endl;
-                                                              std::cout << "Fog Max Distance: " << pWindow->context.floatparam[1] << std::endl;
+                                                              std::cout << "Alpha Factor: " << pWindow->context.floatparam[3] << std::endl;
                                                               std::cout << std::endl;
                                                               std::cout << "CONTROLS:" << std::endl;
-                                                              std::cout << "- W key: Switch to Walking camera mode" << std::endl;
-                                                              std::cout << "- O key: Switch to Orbiting camera mode" << std::endl;
-                                                              std::cout << "- Shift + Drag: Move light position" << std::endl;
-                                                              std::cout << "- Shift + Scroll: Adjust light distance" << std::endl;
-                                                              std::cout << "- Alt + Scroll: Adjust fog thickness (5-30)" << std::endl;
-                                                              std::cout << "- Ctrl + Scroll: Adjust edge detection threshold" << std::endl;
-                                                              std::cout << std::endl;
-                                                              std::cout << "ORBITING MODE (default):" << std::endl;
-                                                              std::cout << "  - Mouse drag: Orbit camera around the scene center" << std::endl;
-                                                              std::cout << "  - Scroll: Zoom in/out (move closer/farther from center)" << std::endl;
-                                                              std::cout << std::endl;
-                                                              std::cout << "WALKING MODE:" << std::endl;
-                                                              std::cout << "  - Mouse drag horizontally: Turn camera left/right" << std::endl;
-                                                              std::cout << "  - Mouse drag vertically: Look up/down" << std::endl;
-                                                              std::cout << "  - Scroll: Walk forward/backward" << std::endl;
+                                                              std::cout << "- Orbit Object: Drag / Scroll" << std::endl;
+                                                              std::cout << "- Orbit Light: Shift + Drag / Shift + Scroll" << std::endl;
+                                                              std::cout << "- Blur Filter: 1 (enable) / 2 (disable)" << std::endl;
+                                                              std::cout << "- Edge Filter: 3 (enable) / 4 (disable)" << std::endl;
+                                                              std::cout << "- Edge Threshold: Alt + Scroll" << std::endl;
+                                                              std::cout << "- Alpha Factor: Ctrl + Scroll" << std::endl;
                                                               std::cout << "========================================" << std::endl;
                                                           }
                                                       },
@@ -1343,12 +1330,16 @@ Subwindows:
                                                           // Initialize FBOs and parameters on first call
                                                           if (pass == -1)
                                                           {
-                                                              // Camera mode and fog params
-                                                              pWindow->context.intparam[0] = 0;        // Camera mode: 0=orbiting, 1=walking
+                                                              // Filter states and parameters
+                                                              pWindow->context.intparam[0] = 0;        // Camera mode: 0=orbiting
+                                                              pWindow->context.intparam[1] = 1;        // Blur filter: 1=on, 0=off
+                                                              pWindow->context.intparam[2] = 1;        // Edge filter: 1=on, 0=off
                                                               pWindow->context.floatparam[0] = 2.0f;   // fog.minDist
                                                               pWindow->context.floatparam[1] = 15.0f;  // fog.maxDist
                                                               pWindow->context.floatparam[2] = 0.3f;   // edge detection upper threshold
-                                                              pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f); // fog.color
+                                                              pWindow->context.floatparam[3] = 1.0f;   // alpha factor (edge blending strength)
+                                                              // Edge filter starts ON -> white background/fog
+                                                              pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // fog.color
 
                                                               // Configure FBOs for passes 0-4 (pass 5 renders to screen)
                                                               // Pass 0: Blinn-Phong -> texture in gluintparam[0]
@@ -1375,9 +1366,15 @@ Subwindows:
                                                               pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
                                                           }
 
-                                                          // Pass 0: Blinn-Phong scene - set V, P matrices
+                                                          // Pass 0: Blinn-Phong scene - set V, P matrices and background
                                                           if (pass == 0)
                                                           {
+                                                              // Update background color based on edge filter state
+                                                              if (pWindow->context.intparam[2] == 1)
+                                                                  pWindow->passes[0].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                              else
+                                                                  pWindow->passes[0].backgroundColor = {0.05f, 0.05f, 0.08f, 1.0f};
+
                                                               auto &shader = pWindow->passes[0].renderShader;
                                                               shader.use();
                                                               auto &camera = pWindow->passes[0].cameras[0];
@@ -1408,20 +1405,30 @@ Subwindows:
                                                               shader.setUniform("InputTex", 0);
                                                           }
 
-                                                          // Pass 3: Sobel edge detection - bind horizontal blur output
+                                                          // Pass 3: Sobel edge detection - bind blurred or raw output
                                                           if (pass == 3)
                                                           {
                                                               auto &shader = pWindow->passes[3].renderShader;
                                                               shader.use();
                                                               glActiveTexture(GL_TEXTURE0);
-                                                              glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[2]);
+                                                              // When blur is ON, use blurred output; when OFF, use raw Blinn-Phong
+                                                              if (pWindow->context.intparam[1] == 1)
+                                                                  glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[2]); // Blur H output
+                                                              else
+                                                                  glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]); // Raw Blinn-Phong
                                                               shader.setUniform("InputTex", 0);
                                                               shader.setUniform("EdgeThreshold", pWindow->context.floatparam[2]);
                                                           }
 
-                                                          // Pass 4: Cartoon scene - set V, P matrices
+                                                          // Pass 4: Cartoon scene - set V, P matrices and background
                                                           if (pass == 4)
                                                           {
+                                                              // Update background color based on edge filter state
+                                                              if (pWindow->context.intparam[2] == 1)
+                                                                  pWindow->passes[4].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                              else
+                                                                  pWindow->passes[4].backgroundColor = {0.05f, 0.05f, 0.08f, 1.0f};
+
                                                               auto &shader = pWindow->passes[4].renderShader;
                                                               shader.use();
                                                               auto &camera = pWindow->passes[4].cameras[0];
@@ -1432,7 +1439,7 @@ Subwindows:
                                                               shader.setUniform("P", camera.getPerspective(aspect));
                                                           }
 
-                                                          // Pass 5: Composite - bind edge texture and cartoon texture
+                                                          // Pass 5: Composite - bind edge texture, cartoon texture, and filter params
                                                           if (pass == 5)
                                                           {
                                                               auto &shader = pWindow->passes[5].renderShader;
@@ -1443,33 +1450,51 @@ Subwindows:
                                                               glActiveTexture(GL_TEXTURE1);
                                                               glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[4]);
                                                               shader.setUniform("CartoonTex", 1);
+                                                              shader.setUniform("AlphaFactor", pWindow->context.floatparam[3]);
+                                                              shader.setUniform("EdgeEnabled", pWindow->context.intparam[2]);
                                                           }
                                                       },
 
                                                       // SizeCallback
                                                       [](cg::ManagedWindow *pWindow, int width, int height) {},
 
-                                                      // KeyCallback - W/O to switch camera mode
+                                                      // KeyCallback - 1/2 toggle blur, 3/4 toggle edge filter
                                                       [](cg::ManagedWindow *pWindow, int key)
                                                       {
-                                                          if (key == GLFW_KEY_W)
+                                                          if (key == GLFW_KEY_1)
                                                           {
-                                                              // Switch both scene passes to walking camera
-                                                              pWindow->passes[0].cameras[0].setType(cg::CameraType::WALKING);
-                                                              pWindow->passes[4].cameras[0].setType(cg::CameraType::WALKING);
-                                                              pWindow->context.intparam[0] = 1;
-                                                              std::cout << "Camera mode: Walking" << std::endl;
-                                                              std::cout << "  Drag horizontally to turn, vertically to look up/down" << std::endl;
-                                                              std::cout << "  Scroll to walk forward/backward" << std::endl;
+                                                              pWindow->context.intparam[1] = 1;
+                                                              std::cout << "Blur Filter: ON" << std::endl;
                                                               return false;
                                                           }
-                                                          else if (key == GLFW_KEY_O)
+                                                          else if (key == GLFW_KEY_2)
                                                           {
-                                                              pWindow->passes[0].cameras[0].setType(cg::CameraType::ORBITING);
-                                                              pWindow->passes[4].cameras[0].setType(cg::CameraType::ORBITING);
-                                                              pWindow->context.intparam[0] = 0;
-                                                              std::cout << "Camera mode: Orbiting" << std::endl;
-                                                              std::cout << "  Drag to orbit around scene, scroll to zoom" << std::endl;
+                                                              pWindow->context.intparam[1] = 0;
+                                                              std::cout << "Blur Filter: OFF" << std::endl;
+                                                              return false;
+                                                          }
+                                                          else if (key == GLFW_KEY_3)
+                                                          {
+                                                              pWindow->context.intparam[2] = 1;
+                                                              // Edge ON -> white background/fog
+                                                              pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+                                                              pWindow->passes[0].renderShader.use();
+                                                              pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                              pWindow->passes[4].renderShader.use();
+                                                              pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                              std::cout << "Edge Filter: ON (white background)" << std::endl;
+                                                              return false;
+                                                          }
+                                                          else if (key == GLFW_KEY_4)
+                                                          {
+                                                              pWindow->context.intparam[2] = 0;
+                                                              // Edge OFF -> dark background/fog
+                                                              pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f);
+                                                              pWindow->passes[0].renderShader.use();
+                                                              pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                              pWindow->passes[4].renderShader.use();
+                                                              pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                              std::cout << "Edge Filter: OFF (dark background)" << std::endl;
                                                               return false;
                                                           }
                                                           return true;
@@ -1480,7 +1505,7 @@ Subwindows:
                                                       {
                                                       },
 
-                                                      // ScrollCallback - Zoom, light, fog, or edge threshold adjustment
+                                                      // ScrollCallback - Zoom, light, edge threshold, or alpha factor
                                                       [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
                                                       {
                                                           if (mods & GLFW_MOD_SHIFT)
@@ -1491,24 +1516,17 @@ Subwindows:
                                                           }
                                                           else if (mods & GLFW_MOD_ALT)
                                                           {
-                                                              // Alt + Scroll: Adjust fog max distance
-                                                              pWindow->context.floatparam[1] += (yoffset > 0.0 ? 1.0f : -1.0f);
-                                                              pWindow->context.floatparam[1] = glm::clamp(pWindow->context.floatparam[1], 5.0f, 30.0f);
-
-                                                              // Update fog on both scene shaders
-                                                              pWindow->passes[0].renderShader.use();
-                                                              pWindow->passes[0].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
-                                                              pWindow->passes[4].renderShader.use();
-                                                              pWindow->passes[4].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
-
-                                                              std::cout << "Fog Max Distance: " << pWindow->context.floatparam[1] << std::endl;
-                                                          }
-                                                          else if (mods & GLFW_MOD_CONTROL)
-                                                          {
-                                                              // Ctrl + Scroll: Adjust edge detection threshold
+                                                              // Alt + Scroll: Adjust edge detection threshold
                                                               pWindow->context.floatparam[2] += (yoffset > 0.0 ? 0.05f : -0.05f);
                                                               pWindow->context.floatparam[2] = glm::clamp(pWindow->context.floatparam[2], 0.05f, 1.0f);
                                                               std::cout << "Edge Threshold: " << pWindow->context.floatparam[2] << std::endl;
+                                                          }
+                                                          else if (mods & GLFW_MOD_CONTROL)
+                                                          {
+                                                              // Ctrl + Scroll: Adjust alpha factor (edge blending strength)
+                                                              pWindow->context.floatparam[3] += (yoffset > 0.0 ? 0.05f : -0.05f);
+                                                              pWindow->context.floatparam[3] = glm::clamp(pWindow->context.floatparam[3], 0.0f, 1.0f);
+                                                              std::cout << "Alpha Factor: " << pWindow->context.floatparam[3] << std::endl;
                                                           }
                                                           else
                                                           {
@@ -1518,7 +1536,7 @@ Subwindows:
                                                           }
                                                       },
 
-                                                      // CursorposCallback - Orbit/walk camera or move light
+                                                      // CursorposCallback - Orbit camera or move light
                                                       [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
                                                       {
                                                           if (pWindow->context.input.lbutton_down)
@@ -1531,7 +1549,7 @@ Subwindows:
                                                               }
                                                               else
                                                               {
-                                                                  // Normal drag: Orbit/walk camera (both scene passes)
+                                                                  // Normal drag: Orbit camera (both scene passes)
                                                                   pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
                                                                   pWindow->passes[4].cameras[0].onCursor(xoffset, yoffset);
                                                               }
@@ -2560,7 +2578,8 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          {
                                                              if (focused)
                                                              {
-                                                                 const char *camModes[] = {"Orbiting", "Walking"};
+                                                                 const char *blurStates[] = {"OFF", "ON"};
+                                                                 const char *edgeStates[] = {"OFF", "ON"};
                                                                  std::cout << std::endl;
                                                                  std::cout << "========================================" << std::endl;
                                                                  std::cout << "Detached Assignment 9 - Cel-Shading" << std::endl;
@@ -2574,14 +2593,18 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  std::cout << "  Pass 5: Cartoon shading" << std::endl;
                                                                  std::cout << "  Pass 6: Final composite" << std::endl;
                                                                  std::cout << std::endl;
-                                                                 std::cout << "Camera Mode: " << camModes[pWindow->context.intparam[0]] << std::endl;
+                                                                 std::cout << "Blur Filter: " << blurStates[pWindow->context.intparam[1]] << std::endl;
+                                                                 std::cout << "Edge Filter: " << edgeStates[pWindow->context.intparam[2]] << std::endl;
                                                                  std::cout << "Edge Threshold: " << pWindow->context.floatparam[2] << std::endl;
-                                                                 std::cout << "Fog Max Distance: " << pWindow->context.floatparam[1] << std::endl;
+                                                                 std::cout << "Alpha Factor: " << pWindow->context.floatparam[3] << std::endl;
                                                                  std::cout << std::endl;
                                                                  std::cout << "CONTROLS:" << std::endl;
-                                                                 std::cout << "- W key: Walking camera | O key: Orbiting camera" << std::endl;
-                                                                 std::cout << "- Shift + Drag: Move light | Shift + Scroll: Light distance" << std::endl;
-                                                                 std::cout << "- Alt + Scroll: Fog thickness | Ctrl + Scroll: Edge threshold" << std::endl;
+                                                                 std::cout << "- Orbit Object: Drag / Scroll" << std::endl;
+                                                                 std::cout << "- Orbit Light: Shift + Drag / Shift + Scroll" << std::endl;
+                                                                 std::cout << "- Blur Filter: 1 (enable) / 2 (disable)" << std::endl;
+                                                                 std::cout << "- Edge Filter: 3 (enable) / 4 (disable)" << std::endl;
+                                                                 std::cout << "- Edge Threshold: Alt + Scroll" << std::endl;
+                                                                 std::cout << "- Alpha Factor: Ctrl + Scroll" << std::endl;
                                                                  std::cout << "========================================" << std::endl;
                                                              }
                                                          },
@@ -2592,10 +2615,13 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                              if (pass == -1)
                                                              {
                                                                  pWindow->context.intparam[0] = 0;
+                                                                 pWindow->context.intparam[1] = 1;        // Blur filter: ON
+                                                                 pWindow->context.intparam[2] = 1;        // Edge filter: ON
                                                                  pWindow->context.floatparam[0] = 2.0f;
                                                                  pWindow->context.floatparam[1] = 15.0f;
                                                                  pWindow->context.floatparam[2] = 0.3f;
-                                                                 pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f);
+                                                                 pWindow->context.floatparam[3] = 1.0f;   // Alpha factor
+                                                                 pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // White fog (edge ON)
 
                                                                  // Configure FBOs
                                                                  pWindow->passes[0].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE1, &pWindow->context.gluintparam[0]);
@@ -2617,6 +2643,12 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
 
                                                              if (pass == 0)
                                                              {
+                                                                 // Update background based on edge filter
+                                                                 if (pWindow->context.intparam[2] == 1)
+                                                                     pWindow->passes[0].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                                 else
+                                                                     pWindow->passes[0].backgroundColor = {0.05f, 0.05f, 0.08f, 1.0f};
+
                                                                  auto &shader = pWindow->passes[0].renderShader;
                                                                  shader.use();
                                                                  auto &camera = pWindow->passes[0].cameras[0];
@@ -2650,13 +2682,23 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  auto &shader = pWindow->passes[3].renderShader;
                                                                  shader.use();
                                                                  glActiveTexture(GL_TEXTURE0);
-                                                                 glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[2]);
+                                                                 // When blur is ON, use blurred output; when OFF, use raw Blinn-Phong
+                                                                 if (pWindow->context.intparam[1] == 1)
+                                                                     glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[2]);
+                                                                 else
+                                                                     glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]);
                                                                  shader.setUniform("InputTex", 0);
                                                                  shader.setUniform("EdgeThreshold", pWindow->context.floatparam[2]);
                                                              }
 
                                                              if (pass == 4)
                                                              {
+                                                                 // Update background based on edge filter
+                                                                 if (pWindow->context.intparam[2] == 1)
+                                                                     pWindow->passes[4].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                                 else
+                                                                     pWindow->passes[4].backgroundColor = {0.05f, 0.05f, 0.08f, 1.0f};
+
                                                                  auto &shader = pWindow->passes[4].renderShader;
                                                                  shader.use();
                                                                  auto &camera = pWindow->passes[4].cameras[0];
@@ -2677,6 +2719,8 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  glActiveTexture(GL_TEXTURE1);
                                                                  glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[4]);
                                                                  shader.setUniform("CartoonTex", 1);
+                                                                 shader.setUniform("AlphaFactor", pWindow->context.floatparam[3]);
+                                                                 shader.setUniform("EdgeEnabled", pWindow->context.intparam[2]);
                                                              }
                                                          },
 
@@ -2686,20 +2730,38 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          // KeyCallback
                                                          [](cg::ManagedWindow *pWindow, int key)
                                                          {
-                                                             if (key == GLFW_KEY_W)
+                                                             if (key == GLFW_KEY_1)
                                                              {
-                                                                 pWindow->passes[0].cameras[0].setType(cg::CameraType::WALKING);
-                                                                 pWindow->passes[4].cameras[0].setType(cg::CameraType::WALKING);
-                                                                 pWindow->context.intparam[0] = 1;
-                                                                 std::cout << "Camera mode: Walking" << std::endl;
+                                                                 pWindow->context.intparam[1] = 1;
+                                                                 std::cout << "Blur Filter: ON" << std::endl;
                                                                  return false;
                                                              }
-                                                             else if (key == GLFW_KEY_O)
+                                                             else if (key == GLFW_KEY_2)
                                                              {
-                                                                 pWindow->passes[0].cameras[0].setType(cg::CameraType::ORBITING);
-                                                                 pWindow->passes[4].cameras[0].setType(cg::CameraType::ORBITING);
-                                                                 pWindow->context.intparam[0] = 0;
-                                                                 std::cout << "Camera mode: Orbiting" << std::endl;
+                                                                 pWindow->context.intparam[1] = 0;
+                                                                 std::cout << "Blur Filter: OFF" << std::endl;
+                                                                 return false;
+                                                             }
+                                                             else if (key == GLFW_KEY_3)
+                                                             {
+                                                                 pWindow->context.intparam[2] = 1;
+                                                                 pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+                                                                 pWindow->passes[0].renderShader.use();
+                                                                 pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                                 pWindow->passes[4].renderShader.use();
+                                                                 pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                                 std::cout << "Edge Filter: ON (white background)" << std::endl;
+                                                                 return false;
+                                                             }
+                                                             else if (key == GLFW_KEY_4)
+                                                             {
+                                                                 pWindow->context.intparam[2] = 0;
+                                                                 pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f);
+                                                                 pWindow->passes[0].renderShader.use();
+                                                                 pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                                 pWindow->passes[4].renderShader.use();
+                                                                 pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                                 std::cout << "Edge Filter: OFF (dark background)" << std::endl;
                                                                  return false;
                                                              }
                                                              return true;
@@ -2718,21 +2780,15 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                              }
                                                              else if (mods & GLFW_MOD_ALT)
                                                              {
-                                                                 pWindow->context.floatparam[1] += (yoffset > 0.0 ? 1.0f : -1.0f);
-                                                                 pWindow->context.floatparam[1] = glm::clamp(pWindow->context.floatparam[1], 5.0f, 30.0f);
-
-                                                                 pWindow->passes[0].renderShader.use();
-                                                                 pWindow->passes[0].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
-                                                                 pWindow->passes[4].renderShader.use();
-                                                                 pWindow->passes[4].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
-
-                                                                 std::cout << "Fog Max Distance: " << pWindow->context.floatparam[1] << std::endl;
-                                                             }
-                                                             else if (mods & GLFW_MOD_CONTROL)
-                                                             {
                                                                  pWindow->context.floatparam[2] += (yoffset > 0.0 ? 0.05f : -0.05f);
                                                                  pWindow->context.floatparam[2] = glm::clamp(pWindow->context.floatparam[2], 0.05f, 1.0f);
                                                                  std::cout << "Edge Threshold: " << pWindow->context.floatparam[2] << std::endl;
+                                                             }
+                                                             else if (mods & GLFW_MOD_CONTROL)
+                                                             {
+                                                                 pWindow->context.floatparam[3] += (yoffset > 0.0 ? 0.05f : -0.05f);
+                                                                 pWindow->context.floatparam[3] = glm::clamp(pWindow->context.floatparam[3], 0.0f, 1.0f);
+                                                                 std::cout << "Alpha Factor: " << pWindow->context.floatparam[3] << std::endl;
                                                              }
                                                              else
                                                              {
