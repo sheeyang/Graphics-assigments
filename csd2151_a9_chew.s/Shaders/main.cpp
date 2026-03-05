@@ -967,50 +967,50 @@ Subwindows:
                                                       }},
                                                      pMainWindow));
 
-        // ====================================================================
-        // SUBWINDOW 6: Assignment 8 (Unified Rendering)
-        // ====================================================================
-        // Unified rendering demo with:
-        // - Pass 0: Night sky skybox with cubemap texture
-        // - Pass 1: Scene objects with PBR, cartoon, discard, checkerboard effects
-        // - Fog effect to hide the horizon line
-        // - Camera orbiting (O) and walking (W) modes
-        #define FOG_COLOR { 0.05f, 0.05f, 0.08f, 1.0f }
-        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                                // State
-                                                      pMainWindow,                                    // Parent window
-                                                      {5, GRID_SIZE, GRID_GAP},                       // Grid position: element 5 in grid
-                                                      "Assignment 8 - Unified Rendering",             // Title
-                                                      {0.05f, 0.05f, 0.08f, 1.0f},                    // Background color (dark, matches fog)
-                                                      {{"../NightSky/night_posx.png",                 // Cubemap textures
+// ====================================================================
+// SUBWINDOW 6: Assignment 8 (Unified Rendering)
+// ====================================================================
+// Unified rendering demo with:
+// - Pass 0: Night sky skybox with cubemap texture
+// - Pass 1: Scene objects with PBR, cartoon, discard, checkerboard effects
+// - Fog effect to hide the horizon line
+// - Camera orbiting (O) and walking (W) modes
+#define FOG_COLOR {0.05f, 0.05f, 0.08f, 1.0f}
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                    // State
+                                                      pMainWindow,                        // Parent window
+                                                      {5, GRID_SIZE, GRID_GAP},           // Grid position: element 5 in grid
+                                                      "Assignment 8 - Unified Rendering", // Title
+                                                      {0.05f, 0.05f, 0.08f, 1.0f},        // Background color (dark, matches fog)
+                                                      {{"../NightSky/night_posx.png",     // Cubemap textures
                                                         "../NightSky/night_negx.png",
                                                         "../NightSky/night_posy.png",
                                                         "../NightSky/night_negy.png",
                                                         "../NightSky/night_posz.png",
                                                         "../NightSky/night_negz.png"}},
-                                                      NONE,                                           // Compute shader
-                                                      {                                               // Rendering passes
-                                                       {                                              // Pass 0 - Skybox
-                                                        {NOMARGIN},                                   // Viewport
-                                                        NONE,                                         // Background color
-                                                        ENABLE,                                       // Depth test
-                                                        {{SKYBOX}},                                   // Objects - skybox cube
-                                                        {{{0.0f, 1.0f, 4.0f}}},                       // Camera
-                                                        NONE,                                         // Lights
-                                                        DEFAULT,                                      // Rendering target
+                                                      NONE,                     // Compute shader
+                                                      {                         // Rendering passes
+                                                       {                        // Pass 0 - Skybox
+                                                        {NOMARGIN},             // Viewport
+                                                        NONE,                   // Background color
+                                                        ENABLE,                 // Depth test
+                                                        {{SKYBOX}},             // Objects - skybox cube
+                                                        {{{0.0f, 1.0f, 4.0f}}}, // Camera
+                                                        NONE,                   // Lights
+                                                        DEFAULT,                // Rendering target
                                                         {
         // Shaders - Assignment 8 skybox
 #include "Shaders/ShaderA8Sky.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA8Sky.frag.glsl"
                                                         }},
-                                                       {                                              // Pass 1 - Scene objects
-                                                        {NOMARGIN},                                   // Viewport
-                                                        NONE,                                         // Background color
-                                                        ENABLE,                                       // Depth test
-                                                        DEMOOBJECTS_A8,                               // Objects
-                                                        {{{0.0f, 1.0f, 4.0f}}},                       // Camera - same as skybox
-                                                        {{{0.0f, 3.0f, 5.0f}}},                       // Lights
-                                                        DEFAULT,                                      // Rendering target
+                                                       {                        // Pass 1 - Scene objects
+                                                        {NOMARGIN},             // Viewport
+                                                        NONE,                   // Background color
+                                                        ENABLE,                 // Depth test
+                                                        DEMOOBJECTS_A8,         // Objects
+                                                        {{{0.0f, 1.0f, 4.0f}}}, // Camera - same as skybox
+                                                        {{{0.0f, 3.0f, 5.0f}}}, // Lights
+                                                        DEFAULT,                // Rendering target
                                                         {
         // Shaders - Assignment 8 scene
 #include "Shaders/ShaderA8.vert.glsl"
@@ -1065,9 +1065,9 @@ Subwindows:
                                                           // Initialize parameters on first call
                                                           if (pass == -1)
                                                           {
-                                                              pWindow->context.intparam[0] = 0;        // Camera mode: 0=orbiting, 1=walking
-                                                              pWindow->context.floatparam[0] = 2.0f;   // fog.minDist
-                                                              pWindow->context.floatparam[1] = 15.0f;  // fog.maxDist
+                                                              pWindow->context.intparam[0] = 0;                                     // Camera mode: 0=orbiting, 1=walking
+                                                              pWindow->context.floatparam[0] = 2.0f;                                // fog.minDist
+                                                              pWindow->context.floatparam[1] = 15.0f;                               // fog.maxDist
                                                               pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f); // fog.color
 
                                                               // Set fog uniforms on scene shader (pass 1)
@@ -1204,126 +1204,119 @@ Subwindows:
         GLuint a9_texture0 = 0;
         GLuint a9_texture1 = 0;
 
-#define A9_CARTOON_OBJECTS \
-    { PLANE, PHONG_MATERIAL_BLUE, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.1f, 0.0f)), VISIBLE }, \
-    { TEAPOT, PHONG_MATERIAL_ORANGE, NOTRANSFORM, VISIBLE }
+#define A9_CARTOON_OBJECTS                                                                                \
+    {PLANE, PHONG_MATERIAL_BLUE, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.1f, 0.0f)), VISIBLE}, \
+        {TEAPOT, PHONG_MATERIAL_ORANGE, NOTRANSFORM, VISIBLE}
 
-        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                          // State
-                                                      pMainWindow,                              // Parent window
-                                                      {6, GRID_SIZE, GRID_GAP},                 // Grid position: element 6 in grid
-                                                      "Assignment 9 - Cartoon",                 // Title
-                                                      BLACK,                                    // Background color
-                                                      {                                         // Textures
-                                                          { a9_texture0, GL_TEXTURE0 },
-                                                          { a9_texture1, GL_TEXTURE1 }
-                                                      },
-                                                      NONE,                                     // Compute shader
-                                                      {                                         // Rendering passes
-                                                       {                                        // Pass 0 - Blinn-Phong for edge detection
-                                                        {NOMARGIN},                             // Viewport
-                                                        BLACK,                                  // Background color
-                                                        ENABLE,                                 // Depth test
-                                                        { A9_CARTOON_OBJECTS },                  // Objects
-                                                        { DEFAULT },                            // Cameras
-                                                        { DEFAULT },                            // Lights
-                                                        {                                       // Rendering target
-                                                            cg::FBO::Type::Texture,
-                                                            GL_TEXTURE0,
-                                                            &a9_texture0
-                                                        },
-                                                        {                                       // Vertex and fragment shaders
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,          // State
+                                                      pMainWindow,              // Parent window
+                                                      {6, GRID_SIZE, GRID_GAP}, // Grid position: element 6 in grid
+                                                      "Assignment 9 - Cartoon", // Title
+                                                      BLACK,                    // Background color
+                                                      {                         // Textures
+                                                       {a9_texture0, GL_TEXTURE0},
+                                                       {a9_texture1, GL_TEXTURE1}},
+                                                      NONE,                   // Compute shader
+                                                      {                       // Rendering passes
+                                                       {                      // Pass 0 - Blinn-Phong for edge detection
+                                                        {NOMARGIN},           // Viewport
+                                                        BLACK,                // Background color
+                                                        ENABLE,               // Depth test
+                                                        {A9_CARTOON_OBJECTS}, // Objects
+                                                        {DEFAULT},            // Cameras
+                                                        {DEFAULT},            // Lights
+                                                        {                     // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE0,
+                                                         &a9_texture0},
+                                                        {
+                                                            // Vertex and fragment shaders
 #include "Shaders/ShaderA9.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9Phong.frag.glsl"
-                                                        }
-                                                       },
-                                                       {                                        // Pass 1 - Vertical Gaussian Blur
-                                                        {NOMARGIN},                             // Viewport
-                                                        NONE,                                   // Background color
-                                                        DISABLE,                                // Depth test
-                                                        { { QUAD } },                           // Objects
-                                                        NONE,                                   // Cameras
-                                                        NONE,                                   // Lights
-                                                        {                                       // Rendering target
-                                                            cg::FBO::Type::Texture,
-                                                            GL_TEXTURE1,
-                                                            &a9_texture1
-                                                        },
-                                                        {                                       // Vertex and fragment shaders
+                                                        }},
+                                                       {            // Pass 1 - Vertical Gaussian Blur
+                                                        {NOMARGIN}, // Viewport
+                                                        NONE,       // Background color
+                                                        DISABLE,    // Depth test
+                                                        {{QUAD}},   // Objects
+                                                        NONE,       // Cameras
+                                                        NONE,       // Lights
+                                                        {           // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE1,
+                                                         &a9_texture1},
+                                                        {
+                                                            // Vertex and fragment shaders
 #include "Shaders/ShaderA9Pass.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9BlurV.frag.glsl"
-                                                        }
-                                                       },
-                                                       {                                        // Pass 2 - Horizontal Gaussian Blur
-                                                        {NOMARGIN},                             // Viewport
-                                                        NONE,                                   // Background color
-                                                        DISABLE,                                // Depth test
-                                                        { { QUAD } },                           // Objects
-                                                        NONE,                                   // Cameras
-                                                        NONE,                                   // Lights
-                                                        {                                       // Rendering target
-                                                            cg::FBO::Type::Texture,
-                                                            GL_TEXTURE0,
-                                                            &a9_texture0
-                                                        },
-                                                        {                                       // Vertex and fragment shaders
+                                                        }},
+                                                       {            // Pass 2 - Horizontal Gaussian Blur
+                                                        {NOMARGIN}, // Viewport
+                                                        NONE,       // Background color
+                                                        DISABLE,    // Depth test
+                                                        {{QUAD}},   // Objects
+                                                        NONE,       // Cameras
+                                                        NONE,       // Lights
+                                                        {           // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE0,
+                                                         &a9_texture0},
+                                                        {
+                                                            // Vertex and fragment shaders
 #include "Shaders/ShaderA9Pass.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9BlurH.frag.glsl"
-                                                        }
-                                                       },
-                                                       {                                        // Pass 3 - Sobel Edge Detection
-                                                        {NOMARGIN},                             // Viewport
-                                                        NONE,                                   // Background color
-                                                        DISABLE,                                // Depth test
-                                                        { { QUAD } },                           // Objects
-                                                        NONE,                                   // Cameras
-                                                        NONE,                                   // Lights
-                                                        {                                       // Rendering target
-                                                            cg::FBO::Type::Texture,
-                                                            GL_TEXTURE1,
-                                                            &a9_texture1
-                                                        },
-                                                        {                                       // Vertex and fragment shaders
+                                                        }},
+                                                       {            // Pass 3 - Sobel Edge Detection
+                                                        {NOMARGIN}, // Viewport
+                                                        NONE,       // Background color
+                                                        DISABLE,    // Depth test
+                                                        {{QUAD}},   // Objects
+                                                        NONE,       // Cameras
+                                                        NONE,       // Lights
+                                                        {           // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE1,
+                                                         &a9_texture1},
+                                                        {
+                                                            // Vertex and fragment shaders
 #include "Shaders/ShaderA9Pass.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9Edge.frag.glsl"
-                                                        }
-                                                       },
-                                                       {                                        // Pass 4 - Cartoon/Cel Shading
-                                                        {NOMARGIN},                             // Viewport
-                                                        BLACK,                                  // Background color
-                                                        ENABLE,                                 // Depth test
-                                                        { A9_CARTOON_OBJECTS },                  // Objects (same scene)
-                                                        { DEFAULT },                            // Cameras
-                                                        { DEFAULT },                            // Lights
-                                                        {                                       // Rendering target
-                                                            cg::FBO::Type::Texture,
-                                                            GL_TEXTURE0,
-                                                            &a9_texture0
-                                                        },
-                                                        {                                       // Vertex and fragment shaders
+                                                        }},
+                                                       {                      // Pass 4 - Cartoon/Cel Shading
+                                                        {NOMARGIN},           // Viewport
+                                                        BLACK,                // Background color
+                                                        ENABLE,               // Depth test
+                                                        {A9_CARTOON_OBJECTS}, // Objects (same scene)
+                                                        {DEFAULT},            // Cameras
+                                                        {DEFAULT},            // Lights
+                                                        {                     // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE0,
+                                                         &a9_texture0},
+                                                        {
+                                                            // Vertex and fragment shaders
 #include "Shaders/ShaderA9.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9Cartoon.frag.glsl"
-                                                        }
-                                                       },
-                                                       {                                        // Pass 5 - Final Composite
-                                                        {NOMARGIN},                             // Viewport
-                                                        NONE,                                   // Background color
-                                                        DISABLE,                                // Depth test
-                                                        { { QUAD } },                           // Objects
-                                                        NONE,                                   // Cameras
-                                                        NONE,                                   // Lights
-                                                        DEFAULT,                                // Rendering target (screen)
-                                                        {                                       // Vertex and fragment shaders
+                                                        }},
+                                                       {            // Pass 5 - Final Composite
+                                                        {NOMARGIN}, // Viewport
+                                                        NONE,       // Background color
+                                                        DISABLE,    // Depth test
+                                                        {{QUAD}},   // Objects
+                                                        NONE,       // Cameras
+                                                        NONE,       // Lights
+                                                        DEFAULT,    // Rendering target (screen)
+                                                        {
+                                                            // Vertex and fragment shaders
 #include "Shaders/ShaderA9Pass.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9Composite.frag.glsl"
-                                                        }
-                                                       }
-                                                      },
+                                                        }}},
 
                                                       // FocusCallback - Print help info when window gains focus
                                                       [](cg::ManagedWindow *pWindow, int focused)
@@ -1367,8 +1360,8 @@ Subwindows:
                                                           // Initialize parameters on first call
                                                           if (pass == -1)
                                                           {
-                                                              pWindow->context.intparam[0] = 1;      // Blur enabled
-                                                              pWindow->context.intparam[1] = 1;      // Edge enabled
+                                                              pWindow->context.intparam[0] = 1;       // Blur enabled
+                                                              pWindow->context.intparam[1] = 1;       // Edge enabled
                                                               pWindow->context.floatparam[0] = 0.05f; // Edge threshold
                                                               pWindow->context.floatparam[1] = 1.0f;  // Alpha factor
                                                           }
@@ -1402,31 +1395,15 @@ Subwindows:
                                                               if (pWindow->context.intparam[1] == 1)
                                                               {
                                                                   // Cartoon mode: white background
-                                                                  pWindow->passes[0].backgroundColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-                                                                  pWindow->passes[4].backgroundColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+                                                                  pWindow->passes[0].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                                  pWindow->passes[4].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
                                                               }
                                                               else
                                                               {
                                                                   // Standard mode: black background
-                                                                  pWindow->passes[0].backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-                                                                  pWindow->passes[4].backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+                                                                  pWindow->passes[0].backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
+                                                                  pWindow->passes[4].backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
                                                               }
-                                                          }
-
-                                                          // Pass 1 (Vertical Blur)
-                                                          if (pass == 1)
-                                                          {
-                                                              auto &shader = pWindow->passes[1].renderShader;
-                                                              shader.use();
-                                                              shader.setUniform("BlurEnabled", pWindow->context.intparam[0]);
-                                                          }
-
-                                                          // Pass 2 (Horizontal Blur)
-                                                          if (pass == 2)
-                                                          {
-                                                              auto &shader = pWindow->passes[2].renderShader;
-                                                              shader.use();
-                                                              shader.setUniform("BlurEnabled", pWindow->context.intparam[0]);
                                                           }
 
                                                           // Pass 3 (Edge Detection)
@@ -1445,6 +1422,7 @@ Subwindows:
                                                               shader.use();
                                                               shader.setUniform("Alpha", pWindow->context.floatparam[1]);
                                                               shader.setUniform("Mode", pWindow->context.intparam[1]);
+                                                              shader.setUniform("BlurEnabled", pWindow->context.intparam[0]);
                                                           }
                                                       },
 
@@ -2268,19 +2246,19 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
     {
         // Create detached Assignment 8 window (Unified Rendering)
         GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
-                                                         nullptr,                                        // No parent - standalone window
-                                                         {0, 0, 800, 600},                               // x, y, width, height
-                                                         "Assignment 8 - Unified Rendering (Detached)",  // Title
-                                                         {0.05f, 0.05f, 0.08f, 1.0f},                    // Background color
-                                                         {{"../NightSky/night_posx.png",                 // Cubemap textures
+                                                         nullptr,                                       // No parent - standalone window
+                                                         {0, 0, 800, 600},                              // x, y, width, height
+                                                         "Assignment 8 - Unified Rendering (Detached)", // Title
+                                                         {0.05f, 0.05f, 0.08f, 1.0f},                   // Background color
+                                                         {{"../NightSky/night_posx.png",                // Cubemap textures
                                                            "../NightSky/night_negx.png",
                                                            "../NightSky/night_posy.png",
                                                            "../NightSky/night_negy.png",
                                                            "../NightSky/night_posz.png",
                                                            "../NightSky/night_negz.png"}},
-                                                         NONE,                                           // Compute shader
-                                                         {                                               // Rendering passes
-                                                          {                                              // Pass 0 - Skybox
+                                                         NONE, // Compute shader
+                                                         {     // Rendering passes
+                                                          {    // Pass 0 - Skybox
                                                            {NOMARGIN},
                                                            NONE,
                                                            ENABLE,
@@ -2293,7 +2271,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                ,
 #include "Shaders/ShaderA8Sky.frag.glsl"
                                                            }},
-                                                          {                                              // Pass 1 - Scene
+                                                          {// Pass 1 - Scene
                                                            {NOMARGIN},
                                                            NONE,
                                                            ENABLE,
@@ -2344,9 +2322,9 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          {
                                                              if (pass == -1)
                                                              {
-                                                                 pWindow->context.intparam[0] = 0;        // Camera mode: 0=orbiting
-                                                                 pWindow->context.floatparam[0] = 2.0f;   // fog.minDist
-                                                                 pWindow->context.floatparam[1] = 15.0f;  // fog.maxDist
+                                                                 pWindow->context.intparam[0] = 0;       // Camera mode: 0=orbiting
+                                                                 pWindow->context.floatparam[0] = 2.0f;  // fog.minDist
+                                                                 pWindow->context.floatparam[1] = 15.0f; // fog.maxDist
                                                                  pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f);
 
                                                                  pWindow->passes[1].renderShader.use();
@@ -2472,79 +2450,93 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
         GLuint a9d_texture1 = 0;
 
         GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
-                                                         nullptr,                                    // No parent - standalone window
-                                                         {0, 0, 800, 600},                           // x, y, width, height
-                                                         "Assignment 9 - Cartoon (Detached)",        // Title
+                                                         nullptr,                             // No parent - standalone window
+                                                         {0, 0, 800, 600},                    // x, y, width, height
+                                                         "Assignment 9 - Cartoon (Detached)", // Title
                                                          BLACK,
-                                                         {                                           // Textures
-                                                             { a9d_texture0, GL_TEXTURE0 },
-                                                             { a9d_texture1, GL_TEXTURE1 }
-                                                         },
-                                                         NONE,                                       // Compute shader
-                                                         {                                           // Rendering passes
-                                                          {                                          // Pass 0 - Blinn-Phong
-                                                           {NOMARGIN}, BLACK, ENABLE,
-                                                           { A9_CARTOON_OBJECTS },
-                                                           { DEFAULT }, { DEFAULT },
-                                                           { cg::FBO::Type::Texture, GL_TEXTURE0, &a9d_texture0 },
+                                                         {// Textures
+                                                          {a9d_texture0, GL_TEXTURE0},
+                                                          {a9d_texture1, GL_TEXTURE1}},
+                                                         NONE, // Compute shader
+                                                         {     // Rendering passes
+                                                          {    // Pass 0 - Blinn-Phong
+                                                           {NOMARGIN},
+                                                           BLACK,
+                                                           ENABLE,
+                                                           {A9_CARTOON_OBJECTS},
+                                                           {DEFAULT},
+                                                           {DEFAULT},
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE0, &a9d_texture0},
                                                            {
 #include "Shaders/ShaderA9.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9Phong.frag.glsl"
-                                                           }
-                                                          },
-                                                          {                                          // Pass 1 - V-Blur
-                                                           {NOMARGIN}, NONE, DISABLE,
-                                                           { { QUAD } }, NONE, NONE,
-                                                           { cg::FBO::Type::Texture, GL_TEXTURE1, &a9d_texture1 },
+                                                           }},
+                                                          {// Pass 1 - V-Blur
+                                                           {NOMARGIN},
+                                                           NONE,
+                                                           DISABLE,
+                                                           {{QUAD}},
+                                                           NONE,
+                                                           NONE,
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE1, &a9d_texture1},
                                                            {
 #include "Shaders/ShaderA9Pass.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9BlurV.frag.glsl"
-                                                           }
-                                                          },
-                                                          {                                          // Pass 2 - H-Blur
-                                                           {NOMARGIN}, NONE, DISABLE,
-                                                           { { QUAD } }, NONE, NONE,
-                                                           { cg::FBO::Type::Texture, GL_TEXTURE0, &a9d_texture0 },
+                                                           }},
+                                                          {// Pass 2 - H-Blur
+                                                           {NOMARGIN},
+                                                           NONE,
+                                                           DISABLE,
+                                                           {{QUAD}},
+                                                           NONE,
+                                                           NONE,
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE0, &a9d_texture0},
                                                            {
 #include "Shaders/ShaderA9Pass.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9BlurH.frag.glsl"
-                                                           }
-                                                          },
-                                                          {                                          // Pass 3 - Edge Detection
-                                                           {NOMARGIN}, NONE, DISABLE,
-                                                           { { QUAD } }, NONE, NONE,
-                                                           { cg::FBO::Type::Texture, GL_TEXTURE1, &a9d_texture1 },
+                                                           }},
+                                                          {// Pass 3 - Edge Detection
+                                                           {NOMARGIN},
+                                                           NONE,
+                                                           DISABLE,
+                                                           {{QUAD}},
+                                                           NONE,
+                                                           NONE,
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE1, &a9d_texture1},
                                                            {
 #include "Shaders/ShaderA9Pass.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9Edge.frag.glsl"
-                                                           }
-                                                          },
-                                                          {                                          // Pass 4 - Cartoon Shading
-                                                           {NOMARGIN}, BLACK, ENABLE,
-                                                           { A9_CARTOON_OBJECTS },
-                                                           { DEFAULT }, { DEFAULT },
-                                                           { cg::FBO::Type::Texture, GL_TEXTURE0, &a9d_texture0 },
+                                                           }},
+                                                          {// Pass 4 - Cartoon Shading
+                                                           {NOMARGIN},
+                                                           BLACK,
+                                                           ENABLE,
+                                                           {A9_CARTOON_OBJECTS},
+                                                           {DEFAULT},
+                                                           {DEFAULT},
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE0, &a9d_texture0},
                                                            {
 #include "Shaders/ShaderA9.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9Cartoon.frag.glsl"
-                                                           }
-                                                          },
-                                                          {                                          // Pass 5 - Composite
-                                                           {NOMARGIN}, NONE, DISABLE,
-                                                           { { QUAD } }, NONE, NONE,
+                                                           }},
+                                                          {// Pass 5 - Composite
+                                                           {NOMARGIN},
+                                                           NONE,
+                                                           DISABLE,
+                                                           {{QUAD}},
+                                                           NONE,
+                                                           NONE,
                                                            DEFAULT,
                                                            {
 #include "Shaders/ShaderA9Pass.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9Composite.frag.glsl"
-                                                           }
-                                                          }
-                                                         },
+                                                           }}},
 
                                                          // FocusCallback
                                                          [](cg::ManagedWindow *pWindow, int focused)
@@ -2616,26 +2608,14 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
 
                                                                  if (pWindow->context.intparam[1] == 1)
                                                                  {
-                                                                     pWindow->passes[0].backgroundColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-                                                                     pWindow->passes[4].backgroundColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+                                                                     pWindow->passes[0].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                                     pWindow->passes[4].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
                                                                  }
                                                                  else
                                                                  {
-                                                                     pWindow->passes[0].backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-                                                                     pWindow->passes[4].backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+                                                                     pWindow->passes[0].backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
+                                                                     pWindow->passes[4].backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
                                                                  }
-                                                             }
-
-                                                             if (pass == 1)
-                                                             {
-                                                                 pWindow->passes[1].renderShader.use();
-                                                                 pWindow->passes[1].renderShader.setUniform("BlurEnabled", pWindow->context.intparam[0]);
-                                                             }
-
-                                                             if (pass == 2)
-                                                             {
-                                                                 pWindow->passes[2].renderShader.use();
-                                                                 pWindow->passes[2].renderShader.setUniform("BlurEnabled", pWindow->context.intparam[0]);
                                                              }
 
                                                              if (pass == 3)
@@ -2650,6 +2630,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  pWindow->passes[5].renderShader.use();
                                                                  pWindow->passes[5].renderShader.setUniform("Alpha", pWindow->context.floatparam[1]);
                                                                  pWindow->passes[5].renderShader.setUniform("Mode", pWindow->context.intparam[1]);
+                                                                 pWindow->passes[5].renderShader.setUniform("BlurEnabled", pWindow->context.intparam[0]);
                                                              }
                                                          },
 
