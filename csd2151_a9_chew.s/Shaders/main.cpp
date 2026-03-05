@@ -967,50 +967,50 @@ Subwindows:
                                                       }},
                                                      pMainWindow));
 
-        // ====================================================================
-        // SUBWINDOW 6: Assignment 8 (Unified Rendering)
-        // ====================================================================
-        // Unified rendering demo with:
-        // - Pass 0: Night sky skybox with cubemap texture
-        // - Pass 1: Scene objects with PBR, cartoon, discard, checkerboard effects
-        // - Fog effect to hide the horizon line
-        // - Camera orbiting (O) and walking (W) modes
-        #define FOG_COLOR { 0.05f, 0.05f, 0.08f, 1.0f }
-        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                                // State
-                                                      pMainWindow,                                    // Parent window
-                                                      {5, GRID_SIZE, GRID_GAP},                       // Grid position: element 5 in grid
-                                                      "Assignment 8 - Unified Rendering",             // Title
-                                                      {0.05f, 0.05f, 0.08f, 1.0f},                    // Background color (dark, matches fog)
-                                                      {{"../NightSky/night_posx.png",                 // Cubemap textures
+// ====================================================================
+// SUBWINDOW 6: Assignment 8 (Unified Rendering)
+// ====================================================================
+// Unified rendering demo with:
+// - Pass 0: Night sky skybox with cubemap texture
+// - Pass 1: Scene objects with PBR, cartoon, discard, checkerboard effects
+// - Fog effect to hide the horizon line
+// - Camera orbiting (O) and walking (W) modes
+#define FOG_COLOR {0.05f, 0.05f, 0.08f, 1.0f}
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                    // State
+                                                      pMainWindow,                        // Parent window
+                                                      {5, GRID_SIZE, GRID_GAP},           // Grid position: element 5 in grid
+                                                      "Assignment 8 - Unified Rendering", // Title
+                                                      {0.05f, 0.05f, 0.08f, 1.0f},        // Background color (dark, matches fog)
+                                                      {{"../NightSky/night_posx.png",     // Cubemap textures
                                                         "../NightSky/night_negx.png",
                                                         "../NightSky/night_posy.png",
                                                         "../NightSky/night_negy.png",
                                                         "../NightSky/night_posz.png",
                                                         "../NightSky/night_negz.png"}},
-                                                      NONE,                                           // Compute shader
-                                                      {                                               // Rendering passes
-                                                       {                                              // Pass 0 - Skybox
-                                                        {NOMARGIN},                                   // Viewport
-                                                        NONE,                                         // Background color
-                                                        ENABLE,                                       // Depth test
-                                                        {{SKYBOX}},                                   // Objects - skybox cube
-                                                        {{{0.0f, 1.0f, 4.0f}}},                       // Camera
-                                                        NONE,                                         // Lights
-                                                        DEFAULT,                                      // Rendering target
+                                                      NONE,                     // Compute shader
+                                                      {                         // Rendering passes
+                                                       {                        // Pass 0 - Skybox
+                                                        {NOMARGIN},             // Viewport
+                                                        NONE,                   // Background color
+                                                        ENABLE,                 // Depth test
+                                                        {{SKYBOX}},             // Objects - skybox cube
+                                                        {{{0.0f, 1.0f, 4.0f}}}, // Camera
+                                                        NONE,                   // Lights
+                                                        DEFAULT,                // Rendering target
                                                         {
         // Shaders - Assignment 8 skybox
 #include "Shaders/ShaderA8Sky.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA8Sky.frag.glsl"
                                                         }},
-                                                       {                                              // Pass 1 - Scene objects
-                                                        {NOMARGIN},                                   // Viewport
-                                                        NONE,                                         // Background color
-                                                        ENABLE,                                       // Depth test
-                                                        DEMOOBJECTS_A8,                               // Objects
-                                                        {{{0.0f, 1.0f, 4.0f}}},                       // Camera - same as skybox
-                                                        {{{0.0f, 3.0f, 5.0f}}},                       // Lights
-                                                        DEFAULT,                                      // Rendering target
+                                                       {                        // Pass 1 - Scene objects
+                                                        {NOMARGIN},             // Viewport
+                                                        NONE,                   // Background color
+                                                        ENABLE,                 // Depth test
+                                                        DEMOOBJECTS_A8,         // Objects
+                                                        {{{0.0f, 1.0f, 4.0f}}}, // Camera - same as skybox
+                                                        {{{0.0f, 3.0f, 5.0f}}}, // Lights
+                                                        DEFAULT,                // Rendering target
                                                         {
         // Shaders - Assignment 8 scene
 #include "Shaders/ShaderA8.vert.glsl"
@@ -1065,9 +1065,9 @@ Subwindows:
                                                           // Initialize parameters on first call
                                                           if (pass == -1)
                                                           {
-                                                              pWindow->context.intparam[0] = 0;        // Camera mode: 0=orbiting, 1=walking
-                                                              pWindow->context.floatparam[0] = 2.0f;   // fog.minDist
-                                                              pWindow->context.floatparam[1] = 15.0f;  // fog.maxDist
+                                                              pWindow->context.intparam[0] = 0;                                     // Camera mode: 0=orbiting, 1=walking
+                                                              pWindow->context.floatparam[0] = 2.0f;                                // fog.minDist
+                                                              pWindow->context.floatparam[1] = 15.0f;                               // fog.maxDist
                                                               pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f); // fog.color
 
                                                               // Set fog uniforms on scene shader (pass 1)
@@ -1201,87 +1201,87 @@ Subwindows:
         // - Pass 3: Sobel edge detection
         // - Pass 4: Cartoon/cel-shading
         // - Pass 5: Final composite (edges + cartoon)
-        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                                // State
-                                                      pMainWindow,                                    // Parent window
-                                                      {6, GRID_SIZE, GRID_GAP},                       // Grid position: element 6 in grid
-                                                      "Assignment 9 - Cel-Shading",                   // Title
-                                                      {0.05f, 0.05f, 0.08f, 1.0f},                    // Background color
-                                                      NONE,                                           // Textures
-                                                      NONE,                                           // Compute shader
-                                                      {                                               // Rendering passes
-                                                       {                                              // Pass 0 - Blinn-Phong scene render
-                                                        {NOMARGIN},                                   // Viewport
-                                                        {0.05f, 0.05f, 0.08f, 1.0f},                  // Background color (dark, matches fog)
-                                                        ENABLE,                                       // Depth test
-                                                        DEMOOBJECTS_A8,                               // Objects
-                                                        {{{0.0f, 1.0f, 4.0f}}},                       // Camera
-                                                        {{{0.0f, 3.0f, 5.0f}}},                       // Lights
-                                                        DEFAULT,                                      // FBO (configured in initCallback)
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,               // State
+                                                      pMainWindow,                   // Parent window
+                                                      {6, GRID_SIZE, GRID_GAP},      // Grid position: element 6 in grid
+                                                      "Assignment 9 - Cel-Shading",  // Title
+                                                      {0.05f, 0.05f, 0.08f, 1.0f},   // Background color
+                                                      NONE,                          // Textures
+                                                      NONE,                          // Compute shader
+                                                      {                              // Rendering passes
+                                                       {                             // Pass 0 - Blinn-Phong scene render
+                                                        {NOMARGIN},                  // Viewport
+                                                        {0.05f, 0.05f, 0.08f, 1.0f}, // Background color (dark, matches fog)
+                                                        ENABLE,                      // Depth test
+                                                        DEMOOBJECTS_A8,              // Objects
+                                                        {{{0.0f, 1.0f, 4.0f}}},      // Camera
+                                                        {{{0.0f, 3.0f, 5.0f}}},      // Lights
+                                                        DEFAULT,                     // FBO (configured in initCallback)
                                                         {
 #include "Shaders/ShaderA8.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelPhong.frag.glsl"
                                                         }},
-                                                       {                                              // Pass 1 - Vertical Gaussian blur
-                                                        {NOMARGIN},                                   // Viewport
-                                                        NONE,                                         // Background color
-                                                        DISABLE,                                      // Depth test
-                                                        {{QUAD}},                                     // Fullscreen quad
-                                                        NONE,                                         // No camera
-                                                        NONE,                                         // No lights
-                                                        DEFAULT,                                      // FBO (configured in initCallback)
+                                                       {            // Pass 1 - Vertical Gaussian blur
+                                                        {NOMARGIN}, // Viewport
+                                                        NONE,       // Background color
+                                                        DISABLE,    // Depth test
+                                                        {{QUAD}},   // Fullscreen quad
+                                                        NONE,       // No camera
+                                                        NONE,       // No lights
+                                                        DEFAULT,    // FBO (configured in initCallback)
                                                         {
 #include "Shaders/Shader.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelBlurV.frag.glsl"
                                                         }},
-                                                       {                                              // Pass 2 - Horizontal Gaussian blur
-                                                        {NOMARGIN},                                   // Viewport
-                                                        NONE,                                         // Background color
-                                                        DISABLE,                                      // Depth test
-                                                        {{QUAD}},                                     // Fullscreen quad
-                                                        NONE,                                         // No camera
-                                                        NONE,                                         // No lights
-                                                        DEFAULT,                                      // FBO (configured in initCallback)
+                                                       {            // Pass 2 - Horizontal Gaussian blur
+                                                        {NOMARGIN}, // Viewport
+                                                        NONE,       // Background color
+                                                        DISABLE,    // Depth test
+                                                        {{QUAD}},   // Fullscreen quad
+                                                        NONE,       // No camera
+                                                        NONE,       // No lights
+                                                        DEFAULT,    // FBO (configured in initCallback)
                                                         {
 #include "Shaders/Shader.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelBlurH.frag.glsl"
                                                         }},
-                                                       {                                              // Pass 3 - Sobel edge detection
-                                                        {NOMARGIN},                                   // Viewport
-                                                        NONE,                                         // Background color
-                                                        DISABLE,                                      // Depth test
-                                                        {{QUAD}},                                     // Fullscreen quad
-                                                        NONE,                                         // No camera
-                                                        NONE,                                         // No lights
-                                                        DEFAULT,                                      // FBO (configured in initCallback)
+                                                       {            // Pass 3 - Sobel edge detection
+                                                        {NOMARGIN}, // Viewport
+                                                        NONE,       // Background color
+                                                        DISABLE,    // Depth test
+                                                        {{QUAD}},   // Fullscreen quad
+                                                        NONE,       // No camera
+                                                        NONE,       // No lights
+                                                        DEFAULT,    // FBO (configured in initCallback)
                                                         {
 #include "Shaders/Shader.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelSobel.frag.glsl"
                                                         }},
-                                                       {                                              // Pass 4 - Cartoon/cel-shading
-                                                        {NOMARGIN},                                   // Viewport
-                                                        {0.05f, 0.05f, 0.08f, 1.0f},                  // Background color (dark, matches fog)
-                                                        ENABLE,                                       // Depth test
-                                                        DEMOOBJECTS_A8,                               // Objects
-                                                        {{{0.0f, 1.0f, 4.0f}}},                       // Camera
-                                                        {{{0.0f, 3.0f, 5.0f}}},                       // Lights
-                                                        DEFAULT,                                      // FBO (configured in initCallback)
+                                                       {                             // Pass 4 - Cartoon/cel-shading
+                                                        {NOMARGIN},                  // Viewport
+                                                        {0.05f, 0.05f, 0.08f, 1.0f}, // Background color (dark, matches fog)
+                                                        ENABLE,                      // Depth test
+                                                        DEMOOBJECTS_A8,              // Objects
+                                                        {{{0.0f, 1.0f, 4.0f}}},      // Camera
+                                                        {{{0.0f, 3.0f, 5.0f}}},      // Lights
+                                                        DEFAULT,                     // FBO (configured in initCallback)
                                                         {
 #include "Shaders/ShaderA8.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelCartoon.frag.glsl"
                                                         }},
-                                                       {                                              // Pass 5 - Final composite
-                                                        {NOMARGIN},                                   // Viewport
-                                                        NONE,                                         // Background color
-                                                        DISABLE,                                      // Depth test
-                                                        {{QUAD}},                                     // Fullscreen quad
-                                                        NONE,                                         // No camera
-                                                        NONE,                                         // No lights
-                                                        DEFAULT,                                      // Render to screen
+                                                       {            // Pass 5 - Final composite
+                                                        {NOMARGIN}, // Viewport
+                                                        NONE,       // Background color
+                                                        DISABLE,    // Depth test
+                                                        {{QUAD}},   // Fullscreen quad
+                                                        NONE,       // No camera
+                                                        NONE,       // No lights
+                                                        DEFAULT,    // Render to screen
                                                         {
 #include "Shaders/Shader.vert.glsl"
                                                             ,
@@ -1331,13 +1331,13 @@ Subwindows:
                                                           if (pass == -1)
                                                           {
                                                               // Filter states and parameters
-                                                              pWindow->context.intparam[0] = 0;        // Camera mode: 0=orbiting
-                                                              pWindow->context.intparam[1] = 1;        // Blur filter: 1=on, 0=off
-                                                              pWindow->context.intparam[2] = 1;        // Edge filter: 1=on, 0=off
-                                                              pWindow->context.floatparam[0] = 2.0f;   // fog.minDist
-                                                              pWindow->context.floatparam[1] = 15.0f;  // fog.maxDist
-                                                              pWindow->context.floatparam[2] = 0.3f;   // edge detection upper threshold
-                                                              pWindow->context.floatparam[3] = 1.0f;   // alpha factor (edge blending strength)
+                                                              pWindow->context.intparam[0] = 0;       // Camera mode: 0=orbiting
+                                                              pWindow->context.intparam[1] = 1;       // Blur filter: 1=on, 0=off
+                                                              pWindow->context.intparam[2] = 1;       // Edge filter: 1=on, 0=off
+                                                              pWindow->context.floatparam[0] = 2.0f;  // fog.minDist
+                                                              pWindow->context.floatparam[1] = 15.0f; // fog.maxDist
+                                                              pWindow->context.floatparam[2] = 0.05f; // edge detection threshold (squared gradient magnitude)
+                                                              pWindow->context.floatparam[3] = 1.0f;  // alpha factor (edge blending strength)
                                                               // Edge filter starts ON -> white background/fog
                                                               pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // fog.color
 
@@ -1385,27 +1385,25 @@ Subwindows:
                                                               shader.setUniform("P", camera.getPerspective(aspect));
                                                           }
 
-                                                          // Pass 1: Vertical blur - bind Blinn-Phong output
+                                                          // Pass 1: Vertical blur - bind Blinn-Phong output to unit 0
                                                           if (pass == 1)
                                                           {
                                                               auto &shader = pWindow->passes[1].renderShader;
                                                               shader.use();
                                                               glActiveTexture(GL_TEXTURE0);
                                                               glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]);
-                                                              shader.setUniform("InputTex", 0);
                                                           }
 
-                                                          // Pass 2: Horizontal blur - bind vertical blur output
+                                                          // Pass 2: Horizontal blur - bind vertical blur output to unit 0
                                                           if (pass == 2)
                                                           {
                                                               auto &shader = pWindow->passes[2].renderShader;
                                                               shader.use();
                                                               glActiveTexture(GL_TEXTURE0);
                                                               glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[1]);
-                                                              shader.setUniform("InputTex", 0);
                                                           }
 
-                                                          // Pass 3: Sobel edge detection - bind blurred or raw output
+                                                          // Pass 3: Sobel edge detection - bind blurred or raw output to unit 0
                                                           if (pass == 3)
                                                           {
                                                               auto &shader = pWindow->passes[3].renderShader;
@@ -1416,7 +1414,6 @@ Subwindows:
                                                                   glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[2]); // Blur H output
                                                               else
                                                                   glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]); // Raw Blinn-Phong
-                                                              shader.setUniform("InputTex", 0);
                                                               shader.setUniform("EdgeThreshold", pWindow->context.floatparam[2]);
                                                           }
 
@@ -1439,17 +1436,15 @@ Subwindows:
                                                               shader.setUniform("P", camera.getPerspective(aspect));
                                                           }
 
-                                                          // Pass 5: Composite - bind edge texture, cartoon texture, and filter params
+                                                          // Pass 5: Composite - bind edge (unit 0) and cartoon (unit 1) textures
                                                           if (pass == 5)
                                                           {
                                                               auto &shader = pWindow->passes[5].renderShader;
                                                               shader.use();
                                                               glActiveTexture(GL_TEXTURE0);
                                                               glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[3]);
-                                                              shader.setUniform("EdgeTex", 0);
                                                               glActiveTexture(GL_TEXTURE1);
                                                               glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[4]);
-                                                              shader.setUniform("CartoonTex", 1);
                                                               shader.setUniform("AlphaFactor", pWindow->context.floatparam[3]);
                                                               shader.setUniform("EdgeEnabled", pWindow->context.intparam[2]);
                                                           }
@@ -1501,9 +1496,7 @@ Subwindows:
                                                       },
 
                                                       // MousebuttonCallback
-                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
-                                                      {
-                                                      },
+                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos) {},
 
                                                       // ScrollCallback - Zoom, light, edge threshold, or alpha factor
                                                       [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
@@ -1517,8 +1510,8 @@ Subwindows:
                                                           else if (mods & GLFW_MOD_ALT)
                                                           {
                                                               // Alt + Scroll: Adjust edge detection threshold
-                                                              pWindow->context.floatparam[2] += (yoffset > 0.0 ? 0.05f : -0.05f);
-                                                              pWindow->context.floatparam[2] = glm::clamp(pWindow->context.floatparam[2], 0.05f, 1.0f);
+                                                              pWindow->context.floatparam[2] += (yoffset > 0.0 ? 0.01f : -0.01f);
+                                                              pWindow->context.floatparam[2] = glm::clamp(pWindow->context.floatparam[2], 0.01f, 1.0f);
                                                               std::cout << "Edge Threshold: " << pWindow->context.floatparam[2] << std::endl;
                                                           }
                                                           else if (mods & GLFW_MOD_CONTROL)
@@ -2286,19 +2279,19 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
     {
         // Create detached Assignment 8 window (Unified Rendering)
         GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
-                                                         nullptr,                                        // No parent - standalone window
-                                                         {0, 0, 800, 600},                               // x, y, width, height
-                                                         "Assignment 8 - Unified Rendering (Detached)",  // Title
-                                                         {0.05f, 0.05f, 0.08f, 1.0f},                    // Background color
-                                                         {{"../NightSky/night_posx.png",                 // Cubemap textures
+                                                         nullptr,                                       // No parent - standalone window
+                                                         {0, 0, 800, 600},                              // x, y, width, height
+                                                         "Assignment 8 - Unified Rendering (Detached)", // Title
+                                                         {0.05f, 0.05f, 0.08f, 1.0f},                   // Background color
+                                                         {{"../NightSky/night_posx.png",                // Cubemap textures
                                                            "../NightSky/night_negx.png",
                                                            "../NightSky/night_posy.png",
                                                            "../NightSky/night_negy.png",
                                                            "../NightSky/night_posz.png",
                                                            "../NightSky/night_negz.png"}},
-                                                         NONE,                                           // Compute shader
-                                                         {                                               // Rendering passes
-                                                          {                                              // Pass 0 - Skybox
+                                                         NONE, // Compute shader
+                                                         {     // Rendering passes
+                                                          {    // Pass 0 - Skybox
                                                            {NOMARGIN},
                                                            NONE,
                                                            ENABLE,
@@ -2311,7 +2304,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                ,
 #include "Shaders/ShaderA8Sky.frag.glsl"
                                                            }},
-                                                          {                                              // Pass 1 - Scene
+                                                          {// Pass 1 - Scene
                                                            {NOMARGIN},
                                                            NONE,
                                                            ENABLE,
@@ -2362,9 +2355,9 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          {
                                                              if (pass == -1)
                                                              {
-                                                                 pWindow->context.intparam[0] = 0;        // Camera mode: 0=orbiting
-                                                                 pWindow->context.floatparam[0] = 2.0f;   // fog.minDist
-                                                                 pWindow->context.floatparam[1] = 15.0f;  // fog.maxDist
+                                                                 pWindow->context.intparam[0] = 0;       // Camera mode: 0=orbiting
+                                                                 pWindow->context.floatparam[0] = 2.0f;  // fog.minDist
+                                                                 pWindow->context.floatparam[1] = 15.0f; // fog.maxDist
                                                                  pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f);
 
                                                                  pWindow->passes[1].renderShader.use();
@@ -2487,14 +2480,14 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
     {
         // Create detached Assignment 9 window (Cel-Shading Pipeline)
         GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
-                                                         nullptr,                                          // No parent - standalone window
-                                                         {0, 0, 800, 600},                                 // x, y, width, height
-                                                         "Assignment 9 - Cel-Shading (Detached)",          // Title
-                                                         {0.05f, 0.05f, 0.08f, 1.0f},                      // Background color
-                                                         NONE,                                             // Textures
-                                                         NONE,                                             // Compute shader
-                                                         {                                                 // Rendering passes
-                                                          {                                                // Pass 0 - Blinn-Phong
+                                                         nullptr,                                 // No parent - standalone window
+                                                         {0, 0, 800, 600},                        // x, y, width, height
+                                                         "Assignment 9 - Cel-Shading (Detached)", // Title
+                                                         {0.05f, 0.05f, 0.08f, 1.0f},             // Background color
+                                                         NONE,                                    // Textures
+                                                         NONE,                                    // Compute shader
+                                                         {                                        // Rendering passes
+                                                          {                                       // Pass 0 - Blinn-Phong
                                                            {NOMARGIN},
                                                            {0.05f, 0.05f, 0.08f, 1.0f},
                                                            ENABLE,
@@ -2507,7 +2500,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                ,
 #include "Shaders/ShaderA9CelPhong.frag.glsl"
                                                            }},
-                                                          {                                                // Pass 1 - Blur V
+                                                          {// Pass 1 - Blur V
                                                            {NOMARGIN},
                                                            NONE,
                                                            DISABLE,
@@ -2520,7 +2513,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                ,
 #include "Shaders/ShaderA9CelBlurV.frag.glsl"
                                                            }},
-                                                          {                                                // Pass 2 - Blur H
+                                                          {// Pass 2 - Blur H
                                                            {NOMARGIN},
                                                            NONE,
                                                            DISABLE,
@@ -2533,7 +2526,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                ,
 #include "Shaders/ShaderA9CelBlurH.frag.glsl"
                                                            }},
-                                                          {                                                // Pass 3 - Sobel
+                                                          {// Pass 3 - Sobel
                                                            {NOMARGIN},
                                                            NONE,
                                                            DISABLE,
@@ -2546,7 +2539,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                ,
 #include "Shaders/ShaderA9CelSobel.frag.glsl"
                                                            }},
-                                                          {                                                // Pass 4 - Cartoon
+                                                          {// Pass 4 - Cartoon
                                                            {NOMARGIN},
                                                            {0.05f, 0.05f, 0.08f, 1.0f},
                                                            ENABLE,
@@ -2559,7 +2552,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                ,
 #include "Shaders/ShaderA9CelCartoon.frag.glsl"
                                                            }},
-                                                          {                                                // Pass 5 - Composite
+                                                          {// Pass 5 - Composite
                                                            {NOMARGIN},
                                                            NONE,
                                                            DISABLE,
@@ -2615,12 +2608,12 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                              if (pass == -1)
                                                              {
                                                                  pWindow->context.intparam[0] = 0;
-                                                                 pWindow->context.intparam[1] = 1;        // Blur filter: ON
-                                                                 pWindow->context.intparam[2] = 1;        // Edge filter: ON
+                                                                 pWindow->context.intparam[1] = 1; // Blur filter: ON
+                                                                 pWindow->context.intparam[2] = 1; // Edge filter: ON
                                                                  pWindow->context.floatparam[0] = 2.0f;
                                                                  pWindow->context.floatparam[1] = 15.0f;
                                                                  pWindow->context.floatparam[2] = 0.3f;
-                                                                 pWindow->context.floatparam[3] = 1.0f;   // Alpha factor
+                                                                 pWindow->context.floatparam[3] = 1.0f;                             // Alpha factor
                                                                  pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // White fog (edge ON)
 
                                                                  // Configure FBOs

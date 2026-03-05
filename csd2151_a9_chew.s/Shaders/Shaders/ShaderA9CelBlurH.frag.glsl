@@ -8,37 +8,39 @@ R"(
 \brief
     Pass 3 - Horizontal Gaussian blur pass.
     Second stage of a two-stage separable Gaussian blur filter.
-    This pass blurs along the horizontal (X) axis, completing the
-    separable Gaussian blur that smooths the Blinn-Phong rendered image
-    for improved edge detection quality.
+    This pass applies a horizontal blur by sampling pixels along the X-axis
+    using the same precomputed Gaussian weights as the first pass, completing
+    the separable Gaussian blur for improved edge detection quality.
 *******************************************************************************/
-#version 330 core
-
-uniform sampler2D InputTex;   // Input texture from vertical blur pass
-uniform vec2 iResolution;     // Viewport resolution
+#version 420
 
 layout(location=0) out vec4 FragColor;
 
+// Texture from the vertical blur pass (Pass 1)
+layout(binding=0) uniform sampler2D Texture;
+
+// Precomputed normalized Gaussian weights.
+// We need only half of all weights because they are symmetric about zero.
+float Weight[5] = float[5]( 0.158435f, 0.148836f, 0.123389f, 
+                             0.0902733f, 0.0582848f );
+
+// Applies the weighted horizontal sum of the Gaussian blur filter
+// to store the result in yet another texture.
 void main()
 {
-    vec2 uv = gl_FragCoord.xy / iResolution;
-    float pixelSize = 1.0f / iResolution.x;
+    ivec2 pix = ivec2(gl_FragCoord.xy);
+    vec4 sum = texelFetch(Texture, pix, 0);
 
-    // 9-tap Gaussian kernel weights (sigma ~ 1.5)
-    // Same weights as vertical pass for a symmetric blur
-    float weights[5] = float[](0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f);
+    sum *= Weight[0];
+    sum += texelFetchOffset(Texture, pix, 0, ivec2(-4,0)) * Weight[4];
+    sum += texelFetchOffset(Texture, pix, 0, ivec2(-3,0)) * Weight[3];
+    sum += texelFetchOffset(Texture, pix, 0, ivec2(-2,0)) * Weight[2];
+    sum += texelFetchOffset(Texture, pix, 0, ivec2(-1,0)) * Weight[1];
+    sum += texelFetchOffset(Texture, pix, 0, ivec2( 1,0)) * Weight[1];
+    sum += texelFetchOffset(Texture, pix, 0, ivec2( 2,0)) * Weight[2];
+    sum += texelFetchOffset(Texture, pix, 0, ivec2( 3,0)) * Weight[3];
+    sum += texelFetchOffset(Texture, pix, 0, ivec2( 4,0)) * Weight[4];
 
-    // Center sample
-    vec3 result = texture(InputTex, uv).rgb * weights[0];
-
-    // Horizontal taps (left and right)
-    for (int i = 1; i < 5; ++i)
-    {
-        float offset = float(i) * pixelSize;
-        result += texture(InputTex, uv + vec2(offset, 0.0f)).rgb * weights[i];
-        result += texture(InputTex, uv - vec2(offset, 0.0f)).rgb * weights[i];
-    }
-
-    FragColor = vec4(result, 1.0f);
+    FragColor = sum;
 }
 )"

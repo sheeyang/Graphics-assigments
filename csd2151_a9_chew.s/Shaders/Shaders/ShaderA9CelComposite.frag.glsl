@@ -15,23 +15,27 @@ R"(
     Where edges are detected, black outlines are drawn.
     Where no edges exist, the cartoon-shaded color is displayed.
 *******************************************************************************/
-#version 330 core
-
-uniform sampler2D EdgeTex;      // Edge detection result (Pass 4)
-uniform sampler2D CartoonTex;   // Cartoon shaded scene (Pass 5)
-uniform vec2 iResolution;       // Viewport resolution
-uniform float AlphaFactor;      // Edge blending strength (0.0 - 1.0)
-uniform int EdgeEnabled;        // Edge filter toggle (0=off, 1=on)
+#version 420
 
 layout(location=0) out vec4 FragColor;
 
+// Edge detection result (Pass 3 - Sobel)
+layout(binding=0) uniform sampler2D EdgeTex;
+
+// Cartoon shaded scene (Pass 4 - Cartoon)
+layout(binding=1) uniform sampler2D CartoonTex;
+
+// Parameters
+uniform float AlphaFactor = 1.0f;   // Edge blending strength (0.0 - 1.0)
+uniform int EdgeEnabled = 1;        // Edge filter toggle (0=off, 1=on)
+
 void main()
 {
-    vec2 uv = gl_FragCoord.xy / iResolution;
+    ivec2 pix = ivec2(gl_FragCoord.xy);
 
-    // Sample the edge map and cartoon color
-    float edgeStrength = texture(EdgeTex, uv).r;
-    vec3 cartoonColor = texture(CartoonTex, uv).rgb;
+    // Sample the edge map and cartoon color using texelFetch
+    float edgeStrength = texelFetch(EdgeTex, pix, 0).r;
+    vec3 cartoonColor = texelFetch(CartoonTex, pix, 0).rgb;
 
     vec3 finalColor;
     if (EdgeEnabled == 1)
