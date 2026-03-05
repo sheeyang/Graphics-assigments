@@ -44,7 +44,39 @@ uniform Light light[1];
 uniform Material material;
 uniform mat4 V;         // View transform matrix
 
+// Mode toggle: 1 = cartoon shading, 0 = standard Blinn-Phong
+uniform int CartoonEnabled = 1;
+
 layout(location=0) out vec4 FragColor;
+
+// ============================================
+// Standard Blinn-Phong (non-cartoon)
+// ============================================
+
+vec3 blinnPhong(vec3 position, vec3 normal)
+{
+    vec3 lightPosInView = (V * vec4(light[0].position, 1.0f)).xyz;
+    vec3 L = normalize(lightPosInView - position);
+    vec3 Vdir = normalize(-position);
+    vec3 N = normalize(normal);
+    vec3 H = normalize(L + Vdir);
+
+    vec3 ambient = light[0].La * material.Ka;
+    if (length(ambient) < 0.001f)
+        ambient = 0.15f * material.Kd;
+
+    float NdotL = max(dot(N, L), 0.0f);
+    vec3 diffuse = light[0].Ld * material.Kd * NdotL;
+
+    vec3 specular = vec3(0.0f);
+    if (NdotL > 0.0f)
+    {
+        float NdotH = max(dot(N, H), 0.0f);
+        specular = light[0].Ls * material.Ks * pow(NdotH, material.shininess);
+    }
+
+    return ambient + diffuse + specular;
+}
 
 // ============================================
 // Cartoon Quantization
@@ -96,7 +128,11 @@ vec3 blinnPhongCartoon(vec3 position, vec3 normal)
 
 void main()
 {
-    vec3 color = blinnPhongCartoon(Position, Normal);
+    vec3 color;
+    if (CartoonEnabled == 1)
+        color = blinnPhongCartoon(Position, Normal);
+    else
+        color = blinnPhong(Position, Normal);
     FragColor = vec4(color, 1.0f);
 }
 )"

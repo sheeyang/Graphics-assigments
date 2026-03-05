@@ -24,6 +24,9 @@ layout(binding=1) uniform sampler2D Texture1;
 // Controls the strength of edge outlines (0.0 = no edges, 1.0 = full edges)
 uniform float Alpha = 1.0f;
 
+// Mode: 1 = cartoon (composite with edges), 0 = standard (pass through shaded scene)
+uniform int Mode = 1;
+
 // Luminance calculation
 float luminance(vec3 color)
 {
@@ -36,6 +39,13 @@ void main()
 
     // Fetch cartoon-shaded color
     vec4 cartoonColor = texelFetch(Texture0, pix, 0);
+
+    // If standard mode, just output the shaded scene (no edge compositing)
+    if (Mode == 0)
+    {
+        FragColor = cartoonColor;
+        return;
+    }
 
     // Fetch edge detection result (white = edge, black = no edge)
     vec4 edgeColor = texelFetch(Texture1, pix, 0);

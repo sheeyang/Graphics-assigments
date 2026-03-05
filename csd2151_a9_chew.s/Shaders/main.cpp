@@ -1347,13 +1347,14 @@ Subwindows:
                                                               std::cout << "   - Orbit Object: Drag with the left mouse button; scroll to zoom." << std::endl;
                                                               std::cout << "   - Orbit Light: Hold Shift and drag; scroll to adjust distance." << std::endl;
                                                               std::cout << "   - Blur Filter: Press 1 to enable and 2 to disable." << std::endl;
-                                                              std::cout << "   - Edge Filter: Press 3 to enable and 4 to disable." << std::endl;
+                                                              std::cout << "   - Cartoon Mode: Press 3 for cartoon shading (white bg, outlines)." << std::endl;
+                                                              std::cout << "   - Standard Mode: Press 4 for standard shading (black bg, no outlines)." << std::endl;
                                                               std::cout << "   - Edge Threshold: Hold Alt and scroll to adjust." << std::endl;
                                                               std::cout << "   - Alpha Factor: Hold Control and scroll to adjust." << std::endl;
                                                               std::cout << std::endl;
                                                               std::cout << "Current Settings:" << std::endl;
                                                               std::cout << "   Blur Filter: " << (pWindow->context.intparam[0] ? "Enabled" : "Disabled") << std::endl;
-                                                              std::cout << "   Edge Filter: " << (pWindow->context.intparam[1] ? "Enabled" : "Disabled") << std::endl;
+                                                              std::cout << "   Rendering Mode: " << (pWindow->context.intparam[1] ? "Cartoon" : "Standard") << std::endl;
                                                               std::cout << "   Edge Threshold: " << pWindow->context.floatparam[0] << std::endl;
                                                               std::cout << "   Alpha Factor: " << pWindow->context.floatparam[1] << std::endl;
                                                               std::cout << "========================================" << std::endl;
@@ -1372,7 +1373,7 @@ Subwindows:
                                                               pWindow->context.floatparam[1] = 1.0f;  // Alpha factor
                                                           }
 
-                                                          // Pass 0 (Blinn-Phong) and Pass 4 (Cartoon) - 3D scene rendering
+                                                          // Pass 0 (Blinn-Phong) and Pass 4 (Cartoon/Standard) - 3D scene rendering
                                                           if (pass == 0 || pass == 4)
                                                           {
                                                               auto &shader = pWindow->passes[pass].renderShader;
@@ -1390,6 +1391,26 @@ Subwindows:
                                                               shader.setUniform("V", V);
                                                               shader.setUniform("P", P);
                                                               light.setUniforms(&shader, 0);
+
+                                                              // Pass 4: set CartoonEnabled based on mode
+                                                              if (pass == 4)
+                                                              {
+                                                                  shader.setUniform("CartoonEnabled", pWindow->context.intparam[1]);
+                                                              }
+
+                                                              // Update background colors based on mode
+                                                              if (pWindow->context.intparam[1] == 1)
+                                                              {
+                                                                  // Cartoon mode: white background
+                                                                  pWindow->passes[0].backgroundColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+                                                                  pWindow->passes[4].backgroundColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+                                                              }
+                                                              else
+                                                              {
+                                                                  // Standard mode: black background
+                                                                  pWindow->passes[0].backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+                                                                  pWindow->passes[4].backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+                                                              }
                                                           }
 
                                                           // Pass 1 (Vertical Blur)
@@ -1423,6 +1444,7 @@ Subwindows:
                                                               auto &shader = pWindow->passes[5].renderShader;
                                                               shader.use();
                                                               shader.setUniform("Alpha", pWindow->context.floatparam[1]);
+                                                              shader.setUniform("Mode", pWindow->context.intparam[1]);
                                                           }
                                                       },
 
@@ -1447,13 +1469,13 @@ Subwindows:
                                                           else if (key == GLFW_KEY_3)
                                                           {
                                                               pWindow->context.intparam[1] = 1;
-                                                              std::cout << "Edge Filter: Enabled" << std::endl;
+                                                              std::cout << "Cartoon Mode: White background, cartoon shading with outlines" << std::endl;
                                                               return false;
                                                           }
                                                           else if (key == GLFW_KEY_4)
                                                           {
                                                               pWindow->context.intparam[1] = 0;
-                                                              std::cout << "Edge Filter: Disabled" << std::endl;
+                                                              std::cout << "Standard Mode: Black background, Blinn-Phong shading, no outlines" << std::endl;
                                                               return false;
                                                           }
                                                           return true;
@@ -2541,7 +2563,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  std::cout << "  Pass 6: Final composite" << std::endl;
                                                                  std::cout << std::endl;
                                                                  std::cout << "Blur Filter: " << (pWindow->context.intparam[0] ? "Enabled" : "Disabled") << std::endl;
-                                                                 std::cout << "Edge Filter: " << (pWindow->context.intparam[1] ? "Enabled" : "Disabled") << std::endl;
+                                                                 std::cout << "Rendering Mode: " << (pWindow->context.intparam[1] ? "Cartoon" : "Standard") << std::endl;
                                                                  std::cout << "Edge Threshold: " << pWindow->context.floatparam[0] << std::endl;
                                                                  std::cout << "Alpha Factor: " << pWindow->context.floatparam[1] << std::endl;
                                                                  std::cout << std::endl;
@@ -2551,7 +2573,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  std::cout << "- Shift+Drag: Move light" << std::endl;
                                                                  std::cout << "- Shift+Scroll: Light distance" << std::endl;
                                                                  std::cout << "- 1/2: Enable/Disable blur" << std::endl;
-                                                                 std::cout << "- 3/4: Enable/Disable edges" << std::endl;
+                                                                 std::cout << "- 3/4: Cartoon/Standard mode" << std::endl;
                                                                  std::cout << "- Alt+Scroll: Edge threshold" << std::endl;
                                                                  std::cout << "- Ctrl+Scroll: Alpha factor" << std::endl;
                                                                  std::cout << "========================================" << std::endl;
@@ -2586,6 +2608,22 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  shader.setUniform("V", V);
                                                                  shader.setUniform("P", P);
                                                                  light.setUniforms(&shader, 0);
+
+                                                                 if (pass == 4)
+                                                                 {
+                                                                     shader.setUniform("CartoonEnabled", pWindow->context.intparam[1]);
+                                                                 }
+
+                                                                 if (pWindow->context.intparam[1] == 1)
+                                                                 {
+                                                                     pWindow->passes[0].backgroundColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+                                                                     pWindow->passes[4].backgroundColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+                                                                 }
+                                                                 else
+                                                                 {
+                                                                     pWindow->passes[0].backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+                                                                     pWindow->passes[4].backgroundColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+                                                                 }
                                                              }
 
                                                              if (pass == 1)
@@ -2611,6 +2649,7 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                              {
                                                                  pWindow->passes[5].renderShader.use();
                                                                  pWindow->passes[5].renderShader.setUniform("Alpha", pWindow->context.floatparam[1]);
+                                                                 pWindow->passes[5].renderShader.setUniform("Mode", pWindow->context.intparam[1]);
                                                              }
                                                          },
 
@@ -2635,13 +2674,13 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                              else if (key == GLFW_KEY_3)
                                                              {
                                                                  pWindow->context.intparam[1] = 1;
-                                                                 std::cout << "Edge Filter: Enabled" << std::endl;
+                                                                 std::cout << "Cartoon Mode: White background, cartoon shading with outlines" << std::endl;
                                                                  return false;
                                                              }
                                                              else if (key == GLFW_KEY_4)
                                                              {
                                                                  pWindow->context.intparam[1] = 0;
-                                                                 std::cout << "Edge Filter: Disabled" << std::endl;
+                                                                 std::cout << "Standard Mode: Black background, Blinn-Phong shading, no outlines" << std::endl;
                                                                  return false;
                                                              }
                                                              return true;
