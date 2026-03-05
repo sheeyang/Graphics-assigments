@@ -42,30 +42,34 @@ float luminance(vec3 color)
     return dot(vec3(0.2126f, 0.7152f, 0.0722f), color);
 }
 
-// Apply a simple Gaussian blur to a texture at the given pixel coordinate
+// Apply a Gaussian blur to a texture at the given pixel coordinate.
+// Uses texelFetch with manual offsets (no compile-time constant restriction).
+// Stride of 2 doubles the effective blur radius.
 vec4 gaussianBlur(sampler2D tex, ivec2 pix)
 {
+    const int s = 4; // stride - double the effective radius
+
     // Vertical component
     vec4 vSum = texelFetch(tex, pix, 0) * Weight[0];
-    vSum += texelFetchOffset(tex, pix, 0, ivec2(0,-4)) * Weight[4];
-    vSum += texelFetchOffset(tex, pix, 0, ivec2(0,-3)) * Weight[3];
-    vSum += texelFetchOffset(tex, pix, 0, ivec2(0,-2)) * Weight[2];
-    vSum += texelFetchOffset(tex, pix, 0, ivec2(0,-1)) * Weight[1];
-    vSum += texelFetchOffset(tex, pix, 0, ivec2(0, 1)) * Weight[1];
-    vSum += texelFetchOffset(tex, pix, 0, ivec2(0, 2)) * Weight[2];
-    vSum += texelFetchOffset(tex, pix, 0, ivec2(0, 3)) * Weight[3];
-    vSum += texelFetchOffset(tex, pix, 0, ivec2(0, 4)) * Weight[4];
+    vSum += texelFetch(tex, pix + ivec2(0, -4*s), 0) * Weight[4];
+    vSum += texelFetch(tex, pix + ivec2(0, -3*s), 0) * Weight[3];
+    vSum += texelFetch(tex, pix + ivec2(0, -2*s), 0) * Weight[2];
+    vSum += texelFetch(tex, pix + ivec2(0, -1*s), 0) * Weight[1];
+    vSum += texelFetch(tex, pix + ivec2(0,  1*s), 0) * Weight[1];
+    vSum += texelFetch(tex, pix + ivec2(0,  2*s), 0) * Weight[2];
+    vSum += texelFetch(tex, pix + ivec2(0,  3*s), 0) * Weight[3];
+    vSum += texelFetch(tex, pix + ivec2(0,  4*s), 0) * Weight[4];
 
     // Horizontal component
     vec4 hSum = texelFetch(tex, pix, 0) * Weight[0];
-    hSum += texelFetchOffset(tex, pix, 0, ivec2(-4,0)) * Weight[4];
-    hSum += texelFetchOffset(tex, pix, 0, ivec2(-3,0)) * Weight[3];
-    hSum += texelFetchOffset(tex, pix, 0, ivec2(-2,0)) * Weight[2];
-    hSum += texelFetchOffset(tex, pix, 0, ivec2(-1,0)) * Weight[1];
-    hSum += texelFetchOffset(tex, pix, 0, ivec2( 1,0)) * Weight[1];
-    hSum += texelFetchOffset(tex, pix, 0, ivec2( 2,0)) * Weight[2];
-    hSum += texelFetchOffset(tex, pix, 0, ivec2( 3,0)) * Weight[3];
-    hSum += texelFetchOffset(tex, pix, 0, ivec2( 4,0)) * Weight[4];
+    hSum += texelFetch(tex, pix + ivec2(-4*s, 0), 0) * Weight[4];
+    hSum += texelFetch(tex, pix + ivec2(-3*s, 0), 0) * Weight[3];
+    hSum += texelFetch(tex, pix + ivec2(-2*s, 0), 0) * Weight[2];
+    hSum += texelFetch(tex, pix + ivec2(-1*s, 0), 0) * Weight[1];
+    hSum += texelFetch(tex, pix + ivec2( 1*s, 0), 0) * Weight[1];
+    hSum += texelFetch(tex, pix + ivec2( 2*s, 0), 0) * Weight[2];
+    hSum += texelFetch(tex, pix + ivec2( 3*s, 0), 0) * Weight[3];
+    hSum += texelFetch(tex, pix + ivec2( 4*s, 0), 0) * Weight[4];
 
     return (vSum + hSum) * 0.5f;
 }
