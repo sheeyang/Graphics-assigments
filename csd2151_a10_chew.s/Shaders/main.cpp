@@ -1576,16 +1576,16 @@ Subwindows:
                                                             "../Pisa/pisa_negy.hdr",
                                                             "../Pisa/pisa_posz.hdr",
                                                             "../Pisa/pisa_negz.hdr"}}, // Cubemap only; portal FBO texture bound manually
-                                                          NONE,                           // Compute shader
-                                                          {                               // Rendering passes
-                                                           {                              // Pass 0 - Portal texture to FBO
-                                                            {NOMARGIN},                   // Viewport
-                                                            BLACK,                        // Background color
-                                                            DISABLE,                      // Depth test
-                                                            {{QUAD}},                     // Fullscreen quad
-                                                            NONE,                         // No camera
-                                                            NONE,                         // No lights
-                                                            DEFAULT,                      // FBO (configured in initCallback)
+                                                          NONE,                        // Compute shader
+                                                          {                            // Rendering passes
+                                                           {                           // Pass 0 - Portal texture to FBO
+                                                            {NOMARGIN},                // Viewport
+                                                            BLACK,                     // Background color
+                                                            DISABLE,                   // Depth test
+                                                            {{QUAD}},                  // Fullscreen quad
+                                                            NONE,                      // No camera
+                                                            NONE,                      // No lights
+                                                            DEFAULT,                   // FBO (configured in initCallback)
                                                             {
 #include "Shaders/Shader.vert.glsl"
                                                                 ,

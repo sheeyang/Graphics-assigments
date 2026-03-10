@@ -6,7 +6,7 @@
        creates OpenGL textures, and provides bind/cleanup utilities.
 *******************************************************************************/
 #include <stdexcept>
-#include <sstream>   
+#include <sstream>
 #include <fstream>
 
 #include "texture.h"
@@ -19,19 +19,19 @@
 
 namespace
 {
-    // This function utilizes the stb_image library for loading image files and OpenGL 
+    // This function utilizes the stb_image library for loading image files and OpenGL
     // for creating and handling the texture.
     //
     // Fix: enable vertical flip so textures match OpenGL's bottom-left origin.
-    GLuint loadTexture(const char* filename)
+    GLuint loadTexture(const char *filename)
     {
         int width = 0, height = 0, bytesPerPix = 0;
 
         // Flip vertically to correct rotation/inversion from image origin mismatch.
         stbi_set_flip_vertically_on_load(1);
 
-        unsigned char* data = stbi_load(filename, &width, &height, &bytesPerPix, 4);
-        
+        unsigned char *data = stbi_load(filename, &width, &height, &bytesPerPix, 4);
+
         // Reset flip state to default to avoid side-effects on other loads.
         stbi_set_flip_vertically_on_load(0);
 
@@ -66,8 +66,7 @@ namespace
         return tex;
     }
 
-
-    // The loadHdrCubeMap function generates and configures a cube map 
+    // The loadHdrCubeMap function generates and configures a cube map
     // texture using HDR image files
     GLuint loadHdrCubeMap(const std::vector<std::string> filenames)
     {
@@ -80,16 +79,17 @@ namespace
 
         int faceIndex = 0;
         int w0 = 0, h0 = 0;
-        for (const std::string& filename : filenames)
+        for (const std::string &filename : filenames)
         {
             int w = 0, h = 0, channels = 0;
-            float* data = stbi_loadf(filename.c_str(), &w, &h, &channels, 3);
+            float *data = stbi_loadf(filename.c_str(), &w, &h, &channels, 3);
             if (!data)
                 throw std::runtime_error(std::string("file ") + filename + " not found: " + stbi_failure_reason());
 
             if (faceIndex == 0)
             {
-                w0 = w; h0 = h;
+                w0 = w;
+                h0 = h;
                 int maxDim = std::max(w0, h0);
                 int levels = (maxDim > 0) ? (1 + static_cast<int>(std::floor(std::log2(maxDim)))) : 1;
                 glTexStorage2D(GL_TEXTURE_CUBE_MAP, levels, GL_RGB32F, w0, h0);
@@ -128,16 +128,16 @@ namespace
 namespace cg
 {
     // Constructors
-    Texture::Texture(const std::initializer_list<const char*>& filenames, GLuint channel /*= GL_TEXTURE0*/)
-        : filenames{ }, channel{ channel }, id{ 0 }, target{ 0 } //, key{ 0 }
+    Texture::Texture(const std::initializer_list<const char *> &filenames, GLuint channel /*= GL_TEXTURE0*/)
+        : filenames{}, channel{channel}, id{0}, target{0} //, key{ 0 }
     {
         this->filenames.reserve(filenames.size());
-        for (auto s : filenames)  
+        for (auto s : filenames)
             this->filenames.emplace_back(s ? s : "");
     }
 
     Texture::Texture(GLuint id /*= 0*/, GLuint channel /*= GL_TEXTURE0*/, GLuint target /*= GL_TEXTURE_2D*/)
-        : filenames{ }, id{ id }, channel{ channel }, target{ target } 
+        : filenames{}, id{id}, channel{channel}, target{target}
     {
     }
 
