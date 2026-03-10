@@ -3,11 +3,11 @@
 \author Vadim Surov (vsurov@digipen.edu)
 \co-author Chew Shee Yang (chew.s@digipen.edu)
 \par Course: CSD2151
-\par Assignment: 9 (Cel-Shading Pipeline)
-\date 03/03/2026 (MM/DD/YYYY)
+\par Assignment: 10 (Portal)
+\date 03/10/2026 (MM/DD/YYYY)
 \brief
-    Application entry point for the Cel-Shading Pipeline assignment. Implements a
-    menu system with subwindows that can be opened in separate windows on double-click.
+    Application entry point for the Portal rendering assignment. Implements a menu
+    system with subwindows that can be opened in separate windows on double-click.
 
     Features:
     - Main window with 4x3 grid layout for subwindows (up to 12)
@@ -17,7 +17,8 @@
     - Subwindow 4: Assignment 4 (Blinn-Phong Shading) demo
     - Subwindow 5: Assignment 5 (Environment Mapping) demo
     - Subwindow 6: Assignment 8 (Unified Rendering) demo
-    - Subwindow 7: Assignment 9 (Cel-Shading) - 6-pass pipeline with edge detection
+    - Subwindow 7: Assignment 9 (Cartoon) demo
+    - Subwindow 8: Assignment 10 (Portal) demo
     - Double-click on subwindow to open in new actual window
     - Interactable subwindows with full keyboard/mouse support
 
@@ -40,7 +41,7 @@ const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 12 subwindows max
 const int GRID_GAP = 10;
 
 // Number of active subwindows
-const int NUM_SUBWINDOWS = 7;
+const int NUM_SUBWINDOWS = 8;
 
 // Tab indicator constants (from Assignment 1)
 const int NUM_TABS = 3;
@@ -136,7 +137,7 @@ int main(int argc, char **argv)
         pMainWindow = windowManager.addWindow({cg::State::SHOW,               // State (SHOW, HIDE)
                                                nullptr,                       // Parent window (nullptr for top-level window)
                                                {0, 0, 1024, 768},             // Viewport - x, y, width, height
-                                               "CSD2151 Assignment 9 - Menu", // Title
+                                               "CSD2151 Assignment 10 - Menu", // Title
                                                {0.15f, 0.15f, 0.2f, 1.0f},    // Background color (dark blue-grey)
                                                NONE,                          // Textures
                                                NONE,                          // Compute shader
@@ -162,7 +163,7 @@ int main(int argc, char **argv)
                                                    if (focused)
                                                    {
                                                        std::cout << std::endl;
-                                                       std::cout << "CSD2151 Assignment 9 - Menu (version "
+                                                       std::cout << "CSD2151 Assignment 10 - Menu (version "
                                                                  << __DATE__ << " " << __TIME__ << ")";
                                                        std::cout << std::endl
                                                                  << R"(
@@ -184,7 +185,8 @@ Subwindows:
    - Subwindow 4: Assignment 4 (Blinn-Phong) - 3D shaded objects with lighting
    - Subwindow 5: Assignment 5 (Environment Mapping) - Skybox with reflection/refraction
    - Subwindow 6: Assignment 8 (Unified Rendering) - PBR, Cartoon, Discard, Fog
-   - Subwindow 7: Assignment 9 (Cel-Shading) - 6-pass cel-shading pipeline with edge detection
+   - Subwindow 7: Assignment 9 (Cartoon) - Multi-pass cartoon rendering
+   - Subwindow 8: Assignment 10 (Portal) - HDR skybox with projected portal
 )";
                                                    }
                                                },
@@ -1192,338 +1194,305 @@ Subwindows:
                                                      pMainWindow));
 
         // ====================================================================
-        // SUBWINDOW 7: Assignment 9 (Cel-Shading Pipeline)
+        // SUBWINDOW 7: Assignment 9 (Cartoon)
         // ====================================================================
-        // 6-pass cel-shading pipeline:
-        // - Pass 0: Blinn-Phong shading (for edge detection input)
-        // - Pass 1: Vertical Gaussian blur
-        // - Pass 2: Horizontal Gaussian blur
-        // - Pass 3: Sobel edge detection
-        // - Pass 4: Cartoon/cel-shading
-        // - Pass 5: Final composite (edges + cartoon)
-        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,               // State
-                                                      pMainWindow,                   // Parent window
-                                                      {6, GRID_SIZE, GRID_GAP},      // Grid position: element 6 in grid
-                                                      "Assignment 9 - Cel-Shading",  // Title
-                                                      {0.05f, 0.05f, 0.08f, 1.0f},   // Background color
-                                                      NONE,                          // Textures
-                                                      NONE,                          // Compute shader
-                                                      {                              // Rendering passes
-                                                       {                             // Pass 0 - Blinn-Phong scene render
-                                                        {NOMARGIN},                  // Viewport
-                                                        {0.05f, 0.05f, 0.08f, 1.0f}, // Background color (dark, matches fog)
-                                                        ENABLE,                      // Depth test
-                                                        DEMOOBJECTS_A8,              // Objects
-                                                        {{{0.0f, 1.0f, 4.0f}}},      // Camera
-                                                        {{{0.0f, 3.0f, 5.0f}}},      // Lights
-                                                        DEFAULT,                     // FBO (configured in initCallback)
+        // Multi-pass cartoon rendering pipeline:
+        // - Pass 0: Blinn-Phong shading → texture0 (for edge detection)
+        // - Pass 1: Vertical Gaussian blur (texture0 → texture1)
+        // - Pass 2: Horizontal Gaussian blur (texture1 → texture0)
+        // - Pass 3: Sobel edge detection (texture0 → texture1)
+        // - Pass 4: Cartoon/cel shading → texture0
+        // - Pass 5: Final composite (texture0 + texture1 → screen)
+        GLuint a9_texture0 = 0;
+        GLuint a9_texture1 = 0;
+
+#define A9_CARTOON_OBJECTS                                                                                \
+    {PLANE, PHONG_MATERIAL_BLUE, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.1f, 0.0f)), VISIBLE}, \
+        {TEAPOT, PHONG_MATERIAL_ORANGE, NOTRANSFORM, VISIBLE}
+
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,          // State
+                                                      pMainWindow,              // Parent window
+                                                      {6, GRID_SIZE, GRID_GAP}, // Grid position: element 6 in grid
+                                                      "Assignment 9 - Cartoon", // Title
+                                                      BLACK,                    // Background color
+                                                      {                         // Textures
+                                                       {a9_texture0, GL_TEXTURE0},
+                                                       {a9_texture1, GL_TEXTURE1}},
+                                                      NONE,                   // Compute shader
+                                                      {                       // Rendering passes
+                                                       {                      // Pass 0 - Blinn-Phong for edge detection
+                                                        {NOMARGIN},           // Viewport
+                                                        BLACK,                // Background color
+                                                        ENABLE,               // Depth test
+                                                        {A9_CARTOON_OBJECTS}, // Objects
+                                                        {DEFAULT},            // Cameras
+                                                        {DEFAULT},            // Lights
+                                                        {                     // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE0,
+                                                         &a9_texture0},
                                                         {
+                                                            // Vertex and fragment shaders
 #include "Shaders/ShaderA8.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelPhong.frag.glsl"
                                                         }},
-                                                       {            // Pass 1 - Vertical Gaussian blur
+                                                       {            // Pass 1 - Vertical Gaussian Blur
                                                         {NOMARGIN}, // Viewport
                                                         NONE,       // Background color
                                                         DISABLE,    // Depth test
-                                                        {{QUAD}},   // Fullscreen quad
-                                                        NONE,       // No camera
-                                                        NONE,       // No lights
-                                                        DEFAULT,    // FBO (configured in initCallback)
+                                                        {{QUAD}},   // Objects
+                                                        NONE,       // Cameras
+                                                        NONE,       // Lights
+                                                        {           // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE1,
+                                                         &a9_texture1},
                                                         {
+                                                            // Vertex and fragment shaders
 #include "Shaders/Shader.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelBlurV.frag.glsl"
                                                         }},
-                                                       {            // Pass 2 - Horizontal Gaussian blur
+                                                       {            // Pass 2 - Horizontal Gaussian Blur
                                                         {NOMARGIN}, // Viewport
                                                         NONE,       // Background color
                                                         DISABLE,    // Depth test
-                                                        {{QUAD}},   // Fullscreen quad
-                                                        NONE,       // No camera
-                                                        NONE,       // No lights
-                                                        DEFAULT,    // FBO (configured in initCallback)
+                                                        {{QUAD}},   // Objects
+                                                        NONE,       // Cameras
+                                                        NONE,       // Lights
+                                                        {           // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE0,
+                                                         &a9_texture0},
                                                         {
+                                                            // Vertex and fragment shaders
 #include "Shaders/Shader.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelBlurH.frag.glsl"
                                                         }},
-                                                       {            // Pass 3 - Sobel edge detection
+                                                       {            // Pass 3 - Sobel Edge Detection
                                                         {NOMARGIN}, // Viewport
                                                         NONE,       // Background color
                                                         DISABLE,    // Depth test
-                                                        {{QUAD}},   // Fullscreen quad
-                                                        NONE,       // No camera
-                                                        NONE,       // No lights
-                                                        DEFAULT,    // FBO (configured in initCallback)
+                                                        {{QUAD}},   // Objects
+                                                        NONE,       // Cameras
+                                                        NONE,       // Lights
+                                                        {           // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE1,
+                                                         &a9_texture1},
                                                         {
+                                                            // Vertex and fragment shaders
 #include "Shaders/Shader.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelSobel.frag.glsl"
                                                         }},
-                                                       {                             // Pass 4 - Cartoon/cel-shading
-                                                        {NOMARGIN},                  // Viewport
-                                                        {0.05f, 0.05f, 0.08f, 1.0f}, // Background color (dark, matches fog)
-                                                        ENABLE,                      // Depth test
-                                                        DEMOOBJECTS_A8,              // Objects
-                                                        {{{0.0f, 1.0f, 4.0f}}},      // Camera
-                                                        {{{0.0f, 3.0f, 5.0f}}},      // Lights
-                                                        DEFAULT,                     // FBO (configured in initCallback)
+                                                       {                      // Pass 4 - Cartoon/Cel Shading
+                                                        {NOMARGIN},           // Viewport
+                                                        BLACK,                // Background color
+                                                        ENABLE,               // Depth test
+                                                        {A9_CARTOON_OBJECTS}, // Objects (same scene)
+                                                        {DEFAULT},            // Cameras
+                                                        {DEFAULT},            // Lights
+                                                        {                     // Rendering target
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE0,
+                                                         &a9_texture0},
                                                         {
+                                                            // Vertex and fragment shaders
 #include "Shaders/ShaderA8.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelCartoon.frag.glsl"
                                                         }},
-                                                       {            // Pass 5 - Final composite
+                                                       {            // Pass 5 - Final Composite
                                                         {NOMARGIN}, // Viewport
                                                         NONE,       // Background color
                                                         DISABLE,    // Depth test
-                                                        {{QUAD}},   // Fullscreen quad
-                                                        NONE,       // No camera
-                                                        NONE,       // No lights
-                                                        DEFAULT,    // Render to screen
+                                                        {{QUAD}},   // Objects
+                                                        NONE,       // Cameras
+                                                        NONE,       // Lights
+                                                        DEFAULT,    // Rendering target (screen)
                                                         {
+                                                            // Vertex and fragment shaders
 #include "Shaders/Shader.vert.glsl"
                                                             ,
 #include "Shaders/ShaderA9CelComposite.frag.glsl"
                                                         }}},
 
-                                                      // FocusCallback - Print help info
+                                                      // FocusCallback - Print help info when window gains focus
                                                       [](cg::ManagedWindow *pWindow, int focused)
                                                       {
                                                           if (focused)
                                                           {
-                                                              const char *blurStates[] = {"OFF", "ON"};
-                                                              const char *edgeStates[] = {"OFF", "ON"};
                                                               std::cout << std::endl;
                                                               std::cout << "========================================" << std::endl;
-                                                              std::cout << "Subwindow 7 (Assignment 9 - Cel-Shading)" << std::endl;
+                                                              std::cout << "Assignment 9 (Cartoon)" << std::endl;
                                                               std::cout << "========================================" << std::endl;
                                                               std::cout << std::endl;
-                                                              std::cout << "6-Pass Cel-Shading Pipeline:" << std::endl;
-                                                              std::cout << "  Pass 1: Blinn-Phong shading" << std::endl;
-                                                              std::cout << "  Pass 2: Vertical Gaussian blur" << std::endl;
-                                                              std::cout << "  Pass 3: Horizontal Gaussian blur" << std::endl;
-                                                              std::cout << "  Pass 4: Sobel edge detection" << std::endl;
-                                                              std::cout << "  Pass 5: Cartoon shading" << std::endl;
-                                                              std::cout << "  Pass 6: Final composite" << std::endl;
+                                                              std::cout << "   This demo showcases a multi-pass cartoon-style rendering pipeline that creates" << std::endl;
+                                                              std::cout << "   non-photorealistic effects with crisp edge outlines. The process applies a" << std::endl;
+                                                              std::cout << "   Gaussian blur filter to reduce noise, followed by Sobel edge detection to" << std::endl;
+                                                              std::cout << "   identify object boundaries. The scene is rendered twice: once with standard" << std::endl;
+                                                              std::cout << "   Blinn-Phong shading for edge analysis, and again with cartoon-style shading" << std::endl;
+                                                              std::cout << "   for the final cell-shaded appearance. The final pass composites the edge" << std::endl;
+                                                              std::cout << "   outlines with the cartoon shading to produce a stylized 2D animation effect." << std::endl;
                                                               std::cout << std::endl;
-                                                              std::cout << "Blur Filter: " << blurStates[pWindow->context.intparam[1]] << std::endl;
-                                                              std::cout << "Edge Filter: " << edgeStates[pWindow->context.intparam[2]] << std::endl;
-                                                              std::cout << "Edge Threshold: " << pWindow->context.floatparam[2] << std::endl;
-                                                              std::cout << "Alpha Factor: " << pWindow->context.floatparam[3] << std::endl;
+                                                              std::cout << "Controls:" << std::endl;
+                                                              std::cout << "   - Orbit Object: Drag with the left mouse button; scroll to zoom." << std::endl;
+                                                              std::cout << "   - Orbit Light: Hold Shift and drag; scroll to adjust distance." << std::endl;
+                                                              std::cout << "   - Blur Filter: Press 1 to enable and 2 to disable." << std::endl;
+                                                              std::cout << "   - Cartoon Mode: Press 3 for cartoon shading (white bg, outlines)." << std::endl;
+                                                              std::cout << "   - Standard Mode: Press 4 for standard shading (black bg, no outlines)." << std::endl;
+                                                              std::cout << "   - Edge Threshold: Hold Alt and scroll to adjust." << std::endl;
+                                                              std::cout << "   - Alpha Factor: Hold Control and scroll to adjust." << std::endl;
                                                               std::cout << std::endl;
-                                                              std::cout << "CONTROLS:" << std::endl;
-                                                              std::cout << "- Orbit Object: Drag / Scroll" << std::endl;
-                                                              std::cout << "- Orbit Light: Shift + Drag / Shift + Scroll" << std::endl;
-                                                              std::cout << "- Blur Filter: 1 (enable) / 2 (disable)" << std::endl;
-                                                              std::cout << "- Edge Filter: 3 (enable) / 4 (disable)" << std::endl;
-                                                              std::cout << "- Edge Threshold: Alt + Scroll" << std::endl;
-                                                              std::cout << "- Alpha Factor: Ctrl + Scroll" << std::endl;
+                                                              std::cout << "Current Settings:" << std::endl;
+                                                              std::cout << "   Blur Filter: " << (pWindow->context.intparam[0] ? "Enabled" : "Disabled") << std::endl;
+                                                              std::cout << "   Rendering Mode: " << (pWindow->context.intparam[1] ? "Cartoon" : "Standard") << std::endl;
+                                                              std::cout << "   Edge Threshold: " << pWindow->context.floatparam[0] << std::endl;
+                                                              std::cout << "   Alpha Factor: " << pWindow->context.floatparam[1] << std::endl;
                                                               std::cout << "========================================" << std::endl;
                                                           }
                                                       },
 
-                                                      // InitCallback - Set up FBOs and uniforms for all 6 passes
+                                                      // InitCallback - Set up uniforms for all passes
                                                       [](cg::ManagedWindow *pWindow, int pass)
                                                       {
-                                                          // Initialize FBOs and parameters on first call
+                                                          // Initialize parameters on first call
                                                           if (pass == -1)
                                                           {
-                                                              // Filter states and parameters
-                                                              pWindow->context.intparam[0] = 0;       // Camera mode: 0=orbiting
-                                                              pWindow->context.intparam[1] = 1;       // Blur filter: 1=on, 0=off
-                                                              pWindow->context.intparam[2] = 1;       // Edge filter: 1=on, 0=off
-                                                              pWindow->context.floatparam[0] = 2.0f;  // fog.minDist
-                                                              pWindow->context.floatparam[1] = 15.0f; // fog.maxDist
-                                                              pWindow->context.floatparam[2] = 0.05f; // edge detection threshold (squared gradient magnitude)
-                                                              pWindow->context.floatparam[3] = 1.0f;  // alpha factor (edge blending strength)
-                                                              // Edge filter starts ON -> white background/fog
-                                                              pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // fog.color
-
-                                                              // Configure FBOs for passes 0-4 (pass 5 renders to screen)
-                                                              // Pass 0: Blinn-Phong -> texture in gluintparam[0]
-                                                              pWindow->passes[0].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE1, &pWindow->context.gluintparam[0]);
-                                                              // Pass 1: Blur V -> texture in gluintparam[1]
-                                                              pWindow->passes[1].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE2, &pWindow->context.gluintparam[1]);
-                                                              // Pass 2: Blur H -> texture in gluintparam[2]
-                                                              pWindow->passes[2].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE3, &pWindow->context.gluintparam[2]);
-                                                              // Pass 3: Sobel edges -> texture in gluintparam[3]
-                                                              pWindow->passes[3].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE4, &pWindow->context.gluintparam[3]);
-                                                              // Pass 4: Cartoon -> texture in gluintparam[4]
-                                                              pWindow->passes[4].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE5, &pWindow->context.gluintparam[4]);
-
-                                                              // Set fog uniforms on Blinn-Phong shader (pass 0)
-                                                              pWindow->passes[0].renderShader.use();
-                                                              pWindow->passes[0].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
-                                                              pWindow->passes[0].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
-                                                              pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-
-                                                              // Set fog uniforms on Cartoon shader (pass 4)
-                                                              pWindow->passes[4].renderShader.use();
-                                                              pWindow->passes[4].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
-                                                              pWindow->passes[4].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
-                                                              pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                              pWindow->context.intparam[0] = 1;       // Blur enabled
+                                                              pWindow->context.intparam[1] = 1;       // Edge enabled
+                                                              pWindow->context.floatparam[0] = 0.05f; // Edge threshold
+                                                              pWindow->context.floatparam[1] = 1.0f;  // Alpha factor
                                                           }
 
-                                                          // Pass 0: Blinn-Phong scene - set V, P matrices and background
-                                                          if (pass == 0)
+                                                          // Pass 0 (Blinn-Phong) and Pass 4 (Cartoon/Standard) - 3D scene rendering
+                                                          if (pass == 0 || pass == 4)
                                                           {
-                                                              // Update background color based on edge filter state
-                                                              if (pWindow->context.intparam[2] == 1)
-                                                                  pWindow->passes[0].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
-                                                              else
-                                                                  pWindow->passes[0].backgroundColor = {0.05f, 0.05f, 0.08f, 1.0f};
-
-                                                              auto &shader = pWindow->passes[0].renderShader;
+                                                              auto &shader = pWindow->passes[pass].renderShader;
                                                               shader.use();
-                                                              auto &camera = pWindow->passes[0].cameras[0];
+
+                                                              auto &camera = pWindow->passes[pass].cameras[0];
+                                                              auto &light = pWindow->passes[pass].lights[0];
+
                                                               float aspect = pWindow->width > 0 && pWindow->height > 0
                                                                                  ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
                                                                                  : 1.0f;
-                                                              shader.setUniform("V", camera.getLookAt());
-                                                              shader.setUniform("P", camera.getPerspective(aspect));
+                                                              glm::mat4 V = camera.getLookAt();
+                                                              glm::mat4 P = camera.getPerspective(aspect);
+
+                                                              shader.setUniform("V", V);
+                                                              shader.setUniform("P", P);
+                                                              light.setUniforms(&shader, 0);
+
+                                                              // Pass 4: set CartoonEnabled based on mode
+                                                              if (pass == 4)
+                                                              {
+                                                                  shader.setUniform("CartoonEnabled", pWindow->context.intparam[1]);
+                                                              }
+
+                                                              // Update background colors based on mode
+                                                              if (pWindow->context.intparam[1] == 1)
+                                                              {
+                                                                  // Cartoon mode: white background
+                                                                  pWindow->passes[0].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                                  pWindow->passes[4].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                              }
+                                                              else
+                                                              {
+                                                                  // Standard mode: black background
+                                                                  pWindow->passes[0].backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
+                                                                  pWindow->passes[4].backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
+                                                              }
                                                           }
 
-                                                          // Pass 1: Vertical blur - bind Blinn-Phong output to unit 0
-                                                          if (pass == 1)
-                                                          {
-                                                              auto &shader = pWindow->passes[1].renderShader;
-                                                              shader.use();
-                                                              glActiveTexture(GL_TEXTURE0);
-                                                              glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]);
-                                                          }
-
-                                                          // Pass 2: Horizontal blur - bind vertical blur output to unit 0
-                                                          if (pass == 2)
-                                                          {
-                                                              auto &shader = pWindow->passes[2].renderShader;
-                                                              shader.use();
-                                                              glActiveTexture(GL_TEXTURE0);
-                                                              glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[1]);
-                                                          }
-
-                                                          // Pass 3: Sobel edge detection - bind blurred or raw output to unit 0
+                                                          // Pass 3 (Edge Detection)
                                                           if (pass == 3)
                                                           {
                                                               auto &shader = pWindow->passes[3].renderShader;
                                                               shader.use();
-                                                              glActiveTexture(GL_TEXTURE0);
-                                                              // When blur is ON, use blurred output; when OFF, use raw Blinn-Phong
-                                                              if (pWindow->context.intparam[1] == 1)
-                                                                  glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[2]); // Blur H output
-                                                              else
-                                                                  glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]); // Raw Blinn-Phong
-                                                              shader.setUniform("EdgeThreshold", pWindow->context.floatparam[2]);
+                                                              shader.setUniform("EdgeEnabled", pWindow->context.intparam[1]);
+                                                              shader.setUniform("EdgeThreshold", pWindow->context.floatparam[0]);
                                                           }
 
-                                                          // Pass 4: Cartoon scene - set V, P matrices and background
-                                                          if (pass == 4)
-                                                          {
-                                                              // Update background color based on edge filter state
-                                                              if (pWindow->context.intparam[2] == 1)
-                                                                  pWindow->passes[4].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
-                                                              else
-                                                                  pWindow->passes[4].backgroundColor = {0.05f, 0.05f, 0.08f, 1.0f};
-
-                                                              auto &shader = pWindow->passes[4].renderShader;
-                                                              shader.use();
-                                                              auto &camera = pWindow->passes[4].cameras[0];
-                                                              float aspect = pWindow->width > 0 && pWindow->height > 0
-                                                                                 ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
-                                                                                 : 1.0f;
-                                                              shader.setUniform("V", camera.getLookAt());
-                                                              shader.setUniform("P", camera.getPerspective(aspect));
-                                                          }
-
-                                                          // Pass 5: Composite - bind edge (unit 0) and cartoon (unit 1) textures
+                                                          // Pass 5 (Composite)
                                                           if (pass == 5)
                                                           {
                                                               auto &shader = pWindow->passes[5].renderShader;
                                                               shader.use();
-                                                              glActiveTexture(GL_TEXTURE0);
-                                                              glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[3]);
-                                                              glActiveTexture(GL_TEXTURE1);
-                                                              glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[4]);
-                                                              shader.setUniform("AlphaFactor", pWindow->context.floatparam[3]);
-                                                              shader.setUniform("EdgeEnabled", pWindow->context.intparam[2]);
+                                                              shader.setUniform("Alpha", pWindow->context.floatparam[1]);
+                                                              shader.setUniform("Mode", pWindow->context.intparam[1]);
+                                                              shader.setUniform("BlurEnabled", pWindow->context.intparam[0]);
                                                           }
                                                       },
 
                                                       // SizeCallback
                                                       [](cg::ManagedWindow *pWindow, int width, int height) {},
 
-                                                      // KeyCallback - 1/2 toggle blur, 3/4 toggle edge filter
+                                                      // KeyCallback - Blur and Edge filter toggles
                                                       [](cg::ManagedWindow *pWindow, int key)
                                                       {
                                                           if (key == GLFW_KEY_1)
                                                           {
-                                                              pWindow->context.intparam[1] = 1;
-                                                              std::cout << "Blur Filter: ON" << std::endl;
+                                                              pWindow->context.intparam[0] = 1;
+                                                              std::cout << "Blur Filter: Enabled" << std::endl;
                                                               return false;
                                                           }
                                                           else if (key == GLFW_KEY_2)
                                                           {
-                                                              pWindow->context.intparam[1] = 0;
-                                                              std::cout << "Blur Filter: OFF" << std::endl;
+                                                              pWindow->context.intparam[0] = 0;
+                                                              std::cout << "Blur Filter: Disabled" << std::endl;
                                                               return false;
                                                           }
                                                           else if (key == GLFW_KEY_3)
                                                           {
-                                                              pWindow->context.intparam[2] = 1;
-                                                              // Edge ON -> white background/fog
-                                                              pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-                                                              pWindow->passes[0].renderShader.use();
-                                                              pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-                                                              pWindow->passes[4].renderShader.use();
-                                                              pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-                                                              std::cout << "Edge Filter: ON (white background)" << std::endl;
+                                                              pWindow->context.intparam[1] = 1;
+                                                              std::cout << "Cartoon Mode: White background, cartoon shading with outlines" << std::endl;
                                                               return false;
                                                           }
                                                           else if (key == GLFW_KEY_4)
                                                           {
-                                                              pWindow->context.intparam[2] = 0;
-                                                              // Edge OFF -> dark background/fog
-                                                              pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f);
-                                                              pWindow->passes[0].renderShader.use();
-                                                              pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-                                                              pWindow->passes[4].renderShader.use();
-                                                              pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-                                                              std::cout << "Edge Filter: OFF (dark background)" << std::endl;
+                                                              pWindow->context.intparam[1] = 0;
+                                                              std::cout << "Standard Mode: Black background, Blinn-Phong shading, no outlines" << std::endl;
                                                               return false;
                                                           }
                                                           return true;
                                                       },
 
                                                       // MousebuttonCallback
-                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos) {},
+                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
+                                                      {
+                                                          // Mouse button handling done via cursor callback
+                                                      },
 
-                                                      // ScrollCallback - Zoom, light, edge threshold, or alpha factor
+                                                      // ScrollCallback - Zoom, light, edge threshold, alpha
                                                       [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
                                                       {
                                                           if (mods & GLFW_MOD_SHIFT)
                                                           {
-                                                              // Shift + Scroll: Adjust light distance (both scene passes)
-                                                              pWindow->passes[0].lights[0].onScroll(xoffset, yoffset);
-                                                              pWindow->passes[4].lights[0].onScroll(xoffset, yoffset);
+                                                              // Shift + Scroll: Adjust light distance
+                                                              pWindow->passes[0].lights[0].onScroll(xoffset, yoffset, 0);
+                                                              pWindow->passes[4].lights[0].onScroll(xoffset, yoffset, 0);
                                                           }
                                                           else if (mods & GLFW_MOD_ALT)
                                                           {
-                                                              // Alt + Scroll: Adjust edge detection threshold
-                                                              pWindow->context.floatparam[2] += (yoffset > 0.0 ? 0.01f : -0.01f);
-                                                              pWindow->context.floatparam[2] = glm::clamp(pWindow->context.floatparam[2], 0.01f, 1.0f);
-                                                              std::cout << "Edge Threshold: " << pWindow->context.floatparam[2] << std::endl;
+                                                              // Alt + Scroll: Adjust edge threshold
+                                                              pWindow->context.floatparam[0] += (yoffset > 0.0 ? 0.01f : -0.01f);
+                                                              pWindow->context.floatparam[0] = glm::clamp(pWindow->context.floatparam[0], 0.001f, 1.0f);
+                                                              std::cout << "Edge Threshold: " << pWindow->context.floatparam[0] << std::endl;
                                                           }
                                                           else if (mods & GLFW_MOD_CONTROL)
                                                           {
-                                                              // Ctrl + Scroll: Adjust alpha factor (edge blending strength)
-                                                              pWindow->context.floatparam[3] += (yoffset > 0.0 ? 0.05f : -0.05f);
-                                                              pWindow->context.floatparam[3] = glm::clamp(pWindow->context.floatparam[3], 0.0f, 1.0f);
-                                                              std::cout << "Alpha Factor: " << pWindow->context.floatparam[3] << std::endl;
+                                                              // Ctrl + Scroll: Adjust alpha factor
+                                                              pWindow->context.floatparam[1] += (yoffset > 0.0 ? 0.05f : -0.05f);
+                                                              pWindow->context.floatparam[1] = glm::clamp(pWindow->context.floatparam[1], 0.0f, 1.0f);
+                                                              std::cout << "Alpha Factor: " << pWindow->context.floatparam[1] << std::endl;
                                                           }
                                                           else
                                                           {
-                                                              // Normal scroll: Zoom camera (both scene passes)
+                                                              // Normal scroll: Zoom camera (Pass 0 and Pass 4 share camera)
                                                               pWindow->passes[0].cameras[0].onScroll(xoffset, yoffset);
                                                               pWindow->passes[4].cameras[0].onScroll(xoffset, yoffset);
                                                           }
@@ -1536,16 +1505,262 @@ Subwindows:
                                                           {
                                                               if (mods & GLFW_MOD_SHIFT)
                                                               {
-                                                                  // Shift + Drag: Move light (both scene passes)
-                                                                  pWindow->passes[0].lights[0].onCursor(xoffset, yoffset);
-                                                                  pWindow->passes[4].lights[0].onCursor(xoffset, yoffset);
+                                                                  // Shift + Drag: Move light (both 3D passes)
+                                                                  pWindow->passes[0].lights[0].onCursor(xoffset, yoffset, 0);
+                                                                  pWindow->passes[4].lights[0].onCursor(xoffset, yoffset, 0);
                                                               }
                                                               else
                                                               {
-                                                                  // Normal drag: Orbit camera (both scene passes)
+                                                                  // Normal drag: Orbit camera (both 3D passes)
                                                                   pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
                                                                   pWindow->passes[4].cameras[0].onCursor(xoffset, yoffset);
                                                               }
+                                                          }
+                                                      }},
+                                                     pMainWindow));
+
+        // ====================================================================
+        // SUBWINDOW 8: Assignment 10 (Portal)
+        // ====================================================================
+        // HDR skybox with projected portal texture:
+        // - Pass 0: Generate procedural portal texture to FBO
+        // - Pass 1: Render HDR Pisa skybox with projected portal overlay
+        // - Walking camera enabled by default
+        // - Click to place portal at mouse position on skybox
+        GLuint a10_portalTexture = 0;
+
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                // State
+                                                      pMainWindow,                    // Parent window
+                                                      {7, GRID_SIZE, GRID_GAP},       // Grid position: element 7 in grid
+                                                      "Assignment 10 - Portal",       // Title
+                                                      BLACK,                          // Background color
+                                                      {                               // Textures
+                                                       {{"../Pisa/pisa_posx.hdr",     // HDR cubemap
+                                                         "../Pisa/pisa_negx.hdr",
+                                                         "../Pisa/pisa_posy.hdr",
+                                                         "../Pisa/pisa_negy.hdr",
+                                                         "../Pisa/pisa_posz.hdr",
+                                                         "../Pisa/pisa_negz.hdr"}},
+                                                       {a10_portalTexture, GL_TEXTURE1}},
+                                                      NONE,                   // Compute shader
+                                                      {                       // Rendering passes
+                                                       {                      // Pass 0 - Portal texture generation
+                                                        {NOMARGIN},           // Viewport
+                                                        BLACK,                // Background color
+                                                        DISABLE,              // Depth test
+                                                        {{QUAD}},             // Objects - fullscreen quad
+                                                        NONE,                 // Cameras
+                                                        NONE,                 // Lights
+                                                        {                     // Rendering target - FBO
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE1,
+                                                         &a10_portalTexture},
+                                                        {
+        // Shaders - Procedural portal texture
+#include "Shaders/Shader.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA10Portal.frag.glsl"
+                                                        }},
+                                                       {                        // Pass 1 - HDR Skybox + Portal
+                                                        {NOMARGIN},             // Viewport
+                                                        BLACK,                  // Background color
+                                                        ENABLE,                 // Depth test
+                                                        {{SKYBOX}},             // Objects - skybox cube
+                                                        {{{0.0f, 1.0f, 4.0f}}}, // Camera
+                                                        NONE,                   // Lights
+                                                        DEFAULT,                // Rendering target (screen)
+                                                        {
+        // Shaders - HDR skybox with projected portal
+#include "Shaders/ShaderA10Sky.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA10Sky.frag.glsl"
+                                                        }}},
+
+                                                      // FocusCallback - Print help info
+                                                      [](cg::ManagedWindow *pWindow, int focused)
+                                                      {
+                                                          if (focused)
+                                                          {
+                                                              const char *camModes[] = {"Orbiting", "Walking"};
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Subwindow 8 (Assignment 10 - Portal)" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "HDR Skybox with Projected Portal Demo:" << std::endl;
+                                                              std::cout << "- Pisa HDR environment cubemap with tone mapping" << std::endl;
+                                                              std::cout << "- Procedural animated portal texture (Shadertoy-style)" << std::endl;
+                                                              std::cout << "- Projected texture technique for portal placement" << std::endl;
+                                                              std::cout << "- Mouse click to place portal at cursor position on skybox" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "Camera Mode: " << camModes[pWindow->context.intparam[1]] << std::endl;
+                                                              std::cout << "Portal Placed: " << (pWindow->context.intparam[0] ? "Yes" : "No") << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "- Left Click: Place portal at mouse position on skybox" << std::endl;
+                                                              std::cout << "- W key: Switch to Walking camera mode" << std::endl;
+                                                              std::cout << "- O key: Switch to Orbiting camera mode" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "WALKING MODE (default):" << std::endl;
+                                                              std::cout << "  - Mouse drag horizontally: Turn camera left/right" << std::endl;
+                                                              std::cout << "  - Mouse drag vertically: Look up/down" << std::endl;
+                                                              std::cout << "  - Scroll: Walk forward/backward" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "ORBITING MODE:" << std::endl;
+                                                              std::cout << "  - Mouse drag: Orbit camera around scene center" << std::endl;
+                                                              std::cout << "  - Scroll: Zoom in/out" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
+                                                      },
+
+                                                      // InitCallback
+                                                      [](cg::ManagedWindow *pWindow, int pass)
+                                                      {
+                                                          // Initialize parameters on first call
+                                                          if (pass == -1)
+                                                          {
+                                                              pWindow->context.intparam[0] = 0;  // Portal not placed yet
+                                                              pWindow->context.intparam[1] = 1;  // Camera mode: 1=walking (default)
+
+                                                              // Set walking camera as default
+                                                              pWindow->passes[1].cameras[0].setType(cg::CameraType::WALKING);
+
+                                                              // Initialize skybox shader uniforms
+                                                              pWindow->passes[1].renderShader.use();
+                                                              pWindow->passes[1].renderShader.setUniform("CubeMapTex", 0);
+                                                              pWindow->passes[1].renderShader.setUniform("PortalEnabled", 0);
+                                                              pWindow->passes[1].renderShader.setUniform("ProjectorMatrix", glm::mat4(1.0f));
+                                                          }
+
+                                                          // Pass 0 - Portal texture generation
+                                                          if (pass == 0)
+                                                          {
+                                                              auto &shader = pWindow->passes[0].renderShader;
+                                                              shader.use();
+                                                              shader.setUniform("iTime", static_cast<float>(glfwGetTime()));
+                                                              shader.setUniform("iResolution", glm::vec2(
+                                                                  static_cast<float>(pWindow->width),
+                                                                  static_cast<float>(pWindow->height)));
+                                                          }
+
+                                                          // Pass 1 - Skybox + Portal rendering
+                                                          if (pass == 1)
+                                                          {
+                                                              auto &shader = pWindow->passes[1].renderShader;
+                                                              shader.use();
+
+                                                              auto &camera = pWindow->passes[1].cameras[0];
+
+                                                              float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                 ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                 : 1.0f;
+                                                              glm::mat4 V = camera.getLookAt();
+                                                              glm::mat4 P = camera.getPerspective(aspect);
+
+                                                              shader.setUniform("V", V);
+                                                              shader.setUniform("P", P);
+                                                              shader.setUniform("CubeMapTex", 0);
+                                                              shader.setUniform("PortalEnabled", pWindow->context.intparam[0]);
+                                                          }
+                                                      },
+
+                                                      // SizeCallback
+                                                      [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                      // KeyCallback - W/O to switch camera mode
+                                                      [](cg::ManagedWindow *pWindow, int key)
+                                                      {
+                                                          if (key == GLFW_KEY_W)
+                                                          {
+                                                              pWindow->passes[1].cameras[0].setType(cg::CameraType::WALKING);
+                                                              pWindow->context.intparam[1] = 1;
+                                                              std::cout << "Camera mode: Walking" << std::endl;
+                                                              std::cout << "  Drag horizontally to turn, vertically to look up/down" << std::endl;
+                                                              std::cout << "  Scroll to walk forward/backward" << std::endl;
+                                                              return false;
+                                                          }
+                                                          else if (key == GLFW_KEY_O)
+                                                          {
+                                                              pWindow->passes[1].cameras[0].setType(cg::CameraType::ORBITING);
+                                                              pWindow->context.intparam[1] = 0;
+                                                              std::cout << "Camera mode: Orbiting" << std::endl;
+                                                              std::cout << "  Drag to orbit around scene, scroll to zoom" << std::endl;
+                                                              return false;
+                                                          }
+                                                          return true;
+                                                      },
+
+                                                      // MousebuttonCallback - Click to place portal
+                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
+                                                      {
+                                                          if (button == GLFW_MOUSE_BUTTON_LEFT)
+                                                          {
+                                                              // Read depth buffer under mouse
+                                                              float depth = 1.0f;
+                                                              glReadPixels(xpos, pWindow->height - ypos, 1, 1,
+                                                                           GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
+                                                              // Get camera matrices
+                                                              auto &camera = pWindow->passes[1].cameras[0];
+                                                              float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                 ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                 : 1.0f;
+                                                              glm::mat4 V = camera.getLookAt();
+                                                              glm::mat4 P = camera.getPerspective(aspect);
+
+                                                              // Convert mouse position to world coordinates
+                                                              glm::vec3 worldPos = glm::unProject(
+                                                                  glm::vec3(xpos, pWindow->height - ypos, depth),
+                                                                  V,
+                                                                  P,
+                                                                  glm::vec4(0, 0, pWindow->width, pWindow->height));
+
+                                                              std::cout << "Portal placed at world position: "
+                                                                        << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << std::endl;
+
+                                                              // Compute portal direction (skybox is at origin, direction = normalize(worldPos))
+                                                              glm::vec3 portalDir = glm::normalize(worldPos);
+
+                                                              // Store portal direction
+                                                              pWindow->context.vec4param[0] = glm::vec4(portalDir, 0.0f);
+                                                              pWindow->context.intparam[0] = 1; // Portal placed
+
+                                                              // Compute projector matrix for projected texture
+                                                              // Projector looks from origin toward the portal direction
+                                                              glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+                                                              // Handle degenerate case when looking straight up/down
+                                                              if (abs(glm::dot(portalDir, up)) > 0.99f)
+                                                                  up = glm::vec3(0.0f, 0.0f, 1.0f);
+
+                                                              glm::mat4 projView = glm::lookAt(glm::vec3(0.0f), portalDir, up);
+                                                              glm::mat4 projProj = glm::perspective(glm::radians(30.0f), 1.0f, 0.1f, 10.0f);
+                                                              glm::mat4 bias = glm::scale(glm::translate(glm::mat4(1.0f),
+                                                                  glm::vec3(0.5f)), glm::vec3(0.5f));
+
+                                                              glm::mat4 projectorMatrix = bias * projProj * projView;
+
+                                                              // Update shader uniforms
+                                                              pWindow->passes[1].renderShader.use();
+                                                              pWindow->passes[1].renderShader.setUniform("ProjectorMatrix", projectorMatrix);
+                                                              pWindow->passes[1].renderShader.setUniform("PortalEnabled", 1);
+
+                                                              std::cout << "Portal direction: "
+                                                                        << portalDir.x << ", " << portalDir.y << ", " << portalDir.z << std::endl;
+                                                          }
+                                                      },
+
+                                                      // ScrollCallback - Walk/Zoom camera
+                                                      [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          pWindow->passes[1].cameras[0].onScroll(xoffset, yoffset);
+                                                      },
+
+                                                      // CursorposCallback - Turn/Orbit camera
+                                                      [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          if (pWindow->context.input.lbutton_down)
+                                                          {
+                                                              pWindow->passes[1].cameras[0].onCursor(xoffset, yoffset);
                                                           }
                                                       }},
                                                      pMainWindow));
@@ -2478,75 +2693,80 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
     }
     else if (subwindowIndex == 6)
     {
-        // Create detached Assignment 9 window (Cel-Shading Pipeline)
+        // Create detached Assignment 9 window (Cartoon)
+        GLuint a9d_texture0 = 0;
+        GLuint a9d_texture1 = 0;
+
         GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
-                                                         nullptr,                                 // No parent - standalone window
-                                                         {0, 0, 800, 600},                        // x, y, width, height
-                                                         "Assignment 9 - Cel-Shading (Detached)", // Title
-                                                         {0.05f, 0.05f, 0.08f, 1.0f},             // Background color
-                                                         NONE,                                    // Textures
-                                                         NONE,                                    // Compute shader
-                                                         {                                        // Rendering passes
-                                                          {                                       // Pass 0 - Blinn-Phong
+                                                         nullptr,                             // No parent - standalone window
+                                                         {0, 0, 800, 600},                    // x, y, width, height
+                                                         "Assignment 9 - Cartoon (Detached)", // Title
+                                                         BLACK,
+                                                         {// Textures
+                                                          {a9d_texture0, GL_TEXTURE0},
+                                                          {a9d_texture1, GL_TEXTURE1}},
+                                                         NONE, // Compute shader
+                                                         {     // Rendering passes
+                                                          {    // Pass 0 - Blinn-Phong
                                                            {NOMARGIN},
-                                                           {0.05f, 0.05f, 0.08f, 1.0f},
+                                                           BLACK,
                                                            ENABLE,
-                                                           DEMOOBJECTS_A8,
-                                                           {{{0.0f, 1.0f, 4.0f}}},
-                                                           {{{0.0f, 3.0f, 5.0f}}},
-                                                           DEFAULT,
+                                                           {A9_CARTOON_OBJECTS},
+                                                           {DEFAULT},
+                                                           {DEFAULT},
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE0, &a9d_texture0},
                                                            {
 #include "Shaders/ShaderA8.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9CelPhong.frag.glsl"
                                                            }},
-                                                          {// Pass 1 - Blur V
+                                                          {// Pass 1 - V-Blur
                                                            {NOMARGIN},
                                                            NONE,
                                                            DISABLE,
                                                            {{QUAD}},
                                                            NONE,
                                                            NONE,
-                                                           DEFAULT,
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE1, &a9d_texture1},
                                                            {
 #include "Shaders/Shader.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9CelBlurV.frag.glsl"
                                                            }},
-                                                          {// Pass 2 - Blur H
+                                                          {// Pass 2 - H-Blur
                                                            {NOMARGIN},
                                                            NONE,
                                                            DISABLE,
                                                            {{QUAD}},
                                                            NONE,
                                                            NONE,
-                                                           DEFAULT,
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE0, &a9d_texture0},
                                                            {
 #include "Shaders/Shader.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9CelBlurH.frag.glsl"
                                                            }},
-                                                          {// Pass 3 - Sobel
+                                                          {// Pass 3 - Edge Detection
                                                            {NOMARGIN},
                                                            NONE,
                                                            DISABLE,
                                                            {{QUAD}},
                                                            NONE,
                                                            NONE,
-                                                           DEFAULT,
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE1, &a9d_texture1},
                                                            {
 #include "Shaders/Shader.vert.glsl"
                                                                ,
 #include "Shaders/ShaderA9CelSobel.frag.glsl"
                                                            }},
-                                                          {// Pass 4 - Cartoon
+                                                          {// Pass 4 - Cartoon Shading
                                                            {NOMARGIN},
-                                                           {0.05f, 0.05f, 0.08f, 1.0f},
+                                                           BLACK,
                                                            ENABLE,
-                                                           DEMOOBJECTS_A8,
-                                                           {{{0.0f, 1.0f, 4.0f}}},
-                                                           {{{0.0f, 3.0f, 5.0f}}},
-                                                           DEFAULT,
+                                                           {A9_CARTOON_OBJECTS},
+                                                           {DEFAULT},
+                                                           {DEFAULT},
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE0, &a9d_texture0},
                                                            {
 #include "Shaders/ShaderA8.vert.glsl"
                                                                ,
@@ -2571,33 +2791,31 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          {
                                                              if (focused)
                                                              {
-                                                                 const char *blurStates[] = {"OFF", "ON"};
-                                                                 const char *edgeStates[] = {"OFF", "ON"};
                                                                  std::cout << std::endl;
                                                                  std::cout << "========================================" << std::endl;
-                                                                 std::cout << "Detached Assignment 9 - Cel-Shading" << std::endl;
+                                                                 std::cout << "Detached Assignment 9 (Cartoon)" << std::endl;
                                                                  std::cout << "========================================" << std::endl;
-                                                                 std::cout << std::endl;
-                                                                 std::cout << "6-Pass Cel-Shading Pipeline:" << std::endl;
-                                                                 std::cout << "  Pass 1: Blinn-Phong shading" << std::endl;
-                                                                 std::cout << "  Pass 2: Vertical Gaussian blur" << std::endl;
-                                                                 std::cout << "  Pass 3: Horizontal Gaussian blur" << std::endl;
+                                                                 std::cout << "Multi-pass cartoon rendering pipeline:" << std::endl;
+                                                                 std::cout << "  Pass 1: Blinn-Phong shading (edge input)" << std::endl;
+                                                                 std::cout << "  Pass 2-3: Gaussian blur (vertical + horizontal)" << std::endl;
                                                                  std::cout << "  Pass 4: Sobel edge detection" << std::endl;
-                                                                 std::cout << "  Pass 5: Cartoon shading" << std::endl;
+                                                                 std::cout << "  Pass 5: Cartoon/cel shading" << std::endl;
                                                                  std::cout << "  Pass 6: Final composite" << std::endl;
                                                                  std::cout << std::endl;
-                                                                 std::cout << "Blur Filter: " << blurStates[pWindow->context.intparam[1]] << std::endl;
-                                                                 std::cout << "Edge Filter: " << edgeStates[pWindow->context.intparam[2]] << std::endl;
-                                                                 std::cout << "Edge Threshold: " << pWindow->context.floatparam[2] << std::endl;
-                                                                 std::cout << "Alpha Factor: " << pWindow->context.floatparam[3] << std::endl;
+                                                                 std::cout << "Blur Filter: " << (pWindow->context.intparam[0] ? "Enabled" : "Disabled") << std::endl;
+                                                                 std::cout << "Rendering Mode: " << (pWindow->context.intparam[1] ? "Cartoon" : "Standard") << std::endl;
+                                                                 std::cout << "Edge Threshold: " << pWindow->context.floatparam[0] << std::endl;
+                                                                 std::cout << "Alpha Factor: " << pWindow->context.floatparam[1] << std::endl;
                                                                  std::cout << std::endl;
                                                                  std::cout << "CONTROLS:" << std::endl;
-                                                                 std::cout << "- Orbit Object: Drag / Scroll" << std::endl;
-                                                                 std::cout << "- Orbit Light: Shift + Drag / Shift + Scroll" << std::endl;
-                                                                 std::cout << "- Blur Filter: 1 (enable) / 2 (disable)" << std::endl;
-                                                                 std::cout << "- Edge Filter: 3 (enable) / 4 (disable)" << std::endl;
-                                                                 std::cout << "- Edge Threshold: Alt + Scroll" << std::endl;
-                                                                 std::cout << "- Alpha Factor: Ctrl + Scroll" << std::endl;
+                                                                 std::cout << "- Drag: Orbit camera" << std::endl;
+                                                                 std::cout << "- Scroll: Zoom" << std::endl;
+                                                                 std::cout << "- Shift+Drag: Move light" << std::endl;
+                                                                 std::cout << "- Shift+Scroll: Light distance" << std::endl;
+                                                                 std::cout << "- 1/2: Enable/Disable blur" << std::endl;
+                                                                 std::cout << "- 3/4: Cartoon/Standard mode" << std::endl;
+                                                                 std::cout << "- Alt+Scroll: Edge threshold" << std::endl;
+                                                                 std::cout << "- Ctrl+Scroll: Alpha factor" << std::endl;
                                                                  std::cout << "========================================" << std::endl;
                                                              }
                                                          },
@@ -2607,113 +2825,60 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          {
                                                              if (pass == -1)
                                                              {
-                                                                 pWindow->context.intparam[0] = 0;
-                                                                 pWindow->context.intparam[1] = 1; // Blur filter: ON
-                                                                 pWindow->context.intparam[2] = 1; // Edge filter: ON
-                                                                 pWindow->context.floatparam[0] = 2.0f;
-                                                                 pWindow->context.floatparam[1] = 15.0f;
-                                                                 pWindow->context.floatparam[2] = 0.3f;
-                                                                 pWindow->context.floatparam[3] = 1.0f;                             // Alpha factor
-                                                                 pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // White fog (edge ON)
-
-                                                                 // Configure FBOs
-                                                                 pWindow->passes[0].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE1, &pWindow->context.gluintparam[0]);
-                                                                 pWindow->passes[1].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE2, &pWindow->context.gluintparam[1]);
-                                                                 pWindow->passes[2].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE3, &pWindow->context.gluintparam[2]);
-                                                                 pWindow->passes[3].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE4, &pWindow->context.gluintparam[3]);
-                                                                 pWindow->passes[4].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE5, &pWindow->context.gluintparam[4]);
-
-                                                                 pWindow->passes[0].renderShader.use();
-                                                                 pWindow->passes[0].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
-                                                                 pWindow->passes[0].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
-                                                                 pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-
-                                                                 pWindow->passes[4].renderShader.use();
-                                                                 pWindow->passes[4].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
-                                                                 pWindow->passes[4].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
-                                                                 pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
+                                                                 pWindow->context.intparam[0] = 1;
+                                                                 pWindow->context.intparam[1] = 1;
+                                                                 pWindow->context.floatparam[0] = 0.05f;
+                                                                 pWindow->context.floatparam[1] = 1.0f;
                                                              }
 
-                                                             if (pass == 0)
+                                                             if (pass == 0 || pass == 4)
                                                              {
-                                                                 // Update background based on edge filter
-                                                                 if (pWindow->context.intparam[2] == 1)
-                                                                     pWindow->passes[0].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
-                                                                 else
-                                                                     pWindow->passes[0].backgroundColor = {0.05f, 0.05f, 0.08f, 1.0f};
-
-                                                                 auto &shader = pWindow->passes[0].renderShader;
+                                                                 auto &shader = pWindow->passes[pass].renderShader;
                                                                  shader.use();
-                                                                 auto &camera = pWindow->passes[0].cameras[0];
+
+                                                                 auto &camera = pWindow->passes[pass].cameras[0];
+                                                                 auto &light = pWindow->passes[pass].lights[0];
+
                                                                  float aspect = pWindow->width > 0 && pWindow->height > 0
                                                                                     ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
                                                                                     : 1.0f;
-                                                                 shader.setUniform("V", camera.getLookAt());
-                                                                 shader.setUniform("P", camera.getPerspective(aspect));
-                                                             }
+                                                                 glm::mat4 V = camera.getLookAt();
+                                                                 glm::mat4 P = camera.getPerspective(aspect);
 
-                                                             if (pass == 1)
-                                                             {
-                                                                 auto &shader = pWindow->passes[1].renderShader;
-                                                                 shader.use();
-                                                                 glActiveTexture(GL_TEXTURE0);
-                                                                 glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]);
-                                                                 shader.setUniform("InputTex", 0);
-                                                             }
+                                                                 shader.setUniform("V", V);
+                                                                 shader.setUniform("P", P);
+                                                                 light.setUniforms(&shader, 0);
 
-                                                             if (pass == 2)
-                                                             {
-                                                                 auto &shader = pWindow->passes[2].renderShader;
-                                                                 shader.use();
-                                                                 glActiveTexture(GL_TEXTURE0);
-                                                                 glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[1]);
-                                                                 shader.setUniform("InputTex", 0);
+                                                                 if (pass == 4)
+                                                                 {
+                                                                     shader.setUniform("CartoonEnabled", pWindow->context.intparam[1]);
+                                                                 }
+
+                                                                 if (pWindow->context.intparam[1] == 1)
+                                                                 {
+                                                                     pWindow->passes[0].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                                     pWindow->passes[4].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
+                                                                 }
+                                                                 else
+                                                                 {
+                                                                     pWindow->passes[0].backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
+                                                                     pWindow->passes[4].backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
+                                                                 }
                                                              }
 
                                                              if (pass == 3)
                                                              {
-                                                                 auto &shader = pWindow->passes[3].renderShader;
-                                                                 shader.use();
-                                                                 glActiveTexture(GL_TEXTURE0);
-                                                                 // When blur is ON, use blurred output; when OFF, use raw Blinn-Phong
-                                                                 if (pWindow->context.intparam[1] == 1)
-                                                                     glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[2]);
-                                                                 else
-                                                                     glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]);
-                                                                 shader.setUniform("InputTex", 0);
-                                                                 shader.setUniform("EdgeThreshold", pWindow->context.floatparam[2]);
-                                                             }
-
-                                                             if (pass == 4)
-                                                             {
-                                                                 // Update background based on edge filter
-                                                                 if (pWindow->context.intparam[2] == 1)
-                                                                     pWindow->passes[4].backgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
-                                                                 else
-                                                                     pWindow->passes[4].backgroundColor = {0.05f, 0.05f, 0.08f, 1.0f};
-
-                                                                 auto &shader = pWindow->passes[4].renderShader;
-                                                                 shader.use();
-                                                                 auto &camera = pWindow->passes[4].cameras[0];
-                                                                 float aspect = pWindow->width > 0 && pWindow->height > 0
-                                                                                    ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
-                                                                                    : 1.0f;
-                                                                 shader.setUniform("V", camera.getLookAt());
-                                                                 shader.setUniform("P", camera.getPerspective(aspect));
+                                                                 pWindow->passes[3].renderShader.use();
+                                                                 pWindow->passes[3].renderShader.setUniform("EdgeEnabled", pWindow->context.intparam[1]);
+                                                                 pWindow->passes[3].renderShader.setUniform("EdgeThreshold", pWindow->context.floatparam[0]);
                                                              }
 
                                                              if (pass == 5)
                                                              {
-                                                                 auto &shader = pWindow->passes[5].renderShader;
-                                                                 shader.use();
-                                                                 glActiveTexture(GL_TEXTURE0);
-                                                                 glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[3]);
-                                                                 shader.setUniform("EdgeTex", 0);
-                                                                 glActiveTexture(GL_TEXTURE1);
-                                                                 glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[4]);
-                                                                 shader.setUniform("CartoonTex", 1);
-                                                                 shader.setUniform("AlphaFactor", pWindow->context.floatparam[3]);
-                                                                 shader.setUniform("EdgeEnabled", pWindow->context.intparam[2]);
+                                                                 pWindow->passes[5].renderShader.use();
+                                                                 pWindow->passes[5].renderShader.setUniform("Alpha", pWindow->context.floatparam[1]);
+                                                                 pWindow->passes[5].renderShader.setUniform("Mode", pWindow->context.intparam[1]);
+                                                                 pWindow->passes[5].renderShader.setUniform("BlurEnabled", pWindow->context.intparam[0]);
                                                              }
                                                          },
 
@@ -2725,36 +2890,26 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          {
                                                              if (key == GLFW_KEY_1)
                                                              {
-                                                                 pWindow->context.intparam[1] = 1;
-                                                                 std::cout << "Blur Filter: ON" << std::endl;
+                                                                 pWindow->context.intparam[0] = 1;
+                                                                 std::cout << "Blur Filter: Enabled" << std::endl;
                                                                  return false;
                                                              }
                                                              else if (key == GLFW_KEY_2)
                                                              {
-                                                                 pWindow->context.intparam[1] = 0;
-                                                                 std::cout << "Blur Filter: OFF" << std::endl;
+                                                                 pWindow->context.intparam[0] = 0;
+                                                                 std::cout << "Blur Filter: Disabled" << std::endl;
                                                                  return false;
                                                              }
                                                              else if (key == GLFW_KEY_3)
                                                              {
-                                                                 pWindow->context.intparam[2] = 1;
-                                                                 pWindow->context.vec4param[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-                                                                 pWindow->passes[0].renderShader.use();
-                                                                 pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-                                                                 pWindow->passes[4].renderShader.use();
-                                                                 pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-                                                                 std::cout << "Edge Filter: ON (white background)" << std::endl;
+                                                                 pWindow->context.intparam[1] = 1;
+                                                                 std::cout << "Cartoon Mode: White background, cartoon shading with outlines" << std::endl;
                                                                  return false;
                                                              }
                                                              else if (key == GLFW_KEY_4)
                                                              {
-                                                                 pWindow->context.intparam[2] = 0;
-                                                                 pWindow->context.vec4param[0] = glm::vec4(0.05f, 0.05f, 0.08f, 1.0f);
-                                                                 pWindow->passes[0].renderShader.use();
-                                                                 pWindow->passes[0].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-                                                                 pWindow->passes[4].renderShader.use();
-                                                                 pWindow->passes[4].renderShader.setUniform("fog.color", pWindow->context.vec4param[0]);
-                                                                 std::cout << "Edge Filter: OFF (dark background)" << std::endl;
+                                                                 pWindow->context.intparam[1] = 0;
+                                                                 std::cout << "Standard Mode: Black background, Blinn-Phong shading, no outlines" << std::endl;
                                                                  return false;
                                                              }
                                                              return true;
@@ -2768,20 +2923,20 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          {
                                                              if (mods & GLFW_MOD_SHIFT)
                                                              {
-                                                                 pWindow->passes[0].lights[0].onScroll(xoffset, yoffset);
-                                                                 pWindow->passes[4].lights[0].onScroll(xoffset, yoffset);
+                                                                 pWindow->passes[0].lights[0].onScroll(xoffset, yoffset, 0);
+                                                                 pWindow->passes[4].lights[0].onScroll(xoffset, yoffset, 0);
                                                              }
                                                              else if (mods & GLFW_MOD_ALT)
                                                              {
-                                                                 pWindow->context.floatparam[2] += (yoffset > 0.0 ? 0.05f : -0.05f);
-                                                                 pWindow->context.floatparam[2] = glm::clamp(pWindow->context.floatparam[2], 0.05f, 1.0f);
-                                                                 std::cout << "Edge Threshold: " << pWindow->context.floatparam[2] << std::endl;
+                                                                 pWindow->context.floatparam[0] += (yoffset > 0.0 ? 0.01f : -0.01f);
+                                                                 pWindow->context.floatparam[0] = glm::clamp(pWindow->context.floatparam[0], 0.001f, 1.0f);
+                                                                 std::cout << "Edge Threshold: " << pWindow->context.floatparam[0] << std::endl;
                                                              }
                                                              else if (mods & GLFW_MOD_CONTROL)
                                                              {
-                                                                 pWindow->context.floatparam[3] += (yoffset > 0.0 ? 0.05f : -0.05f);
-                                                                 pWindow->context.floatparam[3] = glm::clamp(pWindow->context.floatparam[3], 0.0f, 1.0f);
-                                                                 std::cout << "Alpha Factor: " << pWindow->context.floatparam[3] << std::endl;
+                                                                 pWindow->context.floatparam[1] += (yoffset > 0.0 ? 0.05f : -0.05f);
+                                                                 pWindow->context.floatparam[1] = glm::clamp(pWindow->context.floatparam[1], 0.0f, 1.0f);
+                                                                 std::cout << "Alpha Factor: " << pWindow->context.floatparam[1] << std::endl;
                                                              }
                                                              else
                                                              {
@@ -2797,14 +2952,223 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                              {
                                                                  if (mods & GLFW_MOD_SHIFT)
                                                                  {
-                                                                     pWindow->passes[0].lights[0].onCursor(xoffset, yoffset);
-                                                                     pWindow->passes[4].lights[0].onCursor(xoffset, yoffset);
+                                                                     pWindow->passes[0].lights[0].onCursor(xoffset, yoffset, 0);
+                                                                     pWindow->passes[4].lights[0].onCursor(xoffset, yoffset, 0);
                                                                  }
                                                                  else
                                                                  {
                                                                      pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
                                                                      pWindow->passes[4].cameras[0].onCursor(xoffset, yoffset);
                                                                  }
+                                                             }
+                                                         }},
+                                                        pMainWindow);
+
+        if (pDetached)
+        {
+            detachedWindows.push_back(pDetached);
+            glfwShowWindow(pDetached);
+            glfwFocusWindow(pDetached);
+        }
+    }
+    else if (subwindowIndex == 7)
+    {
+        // Create detached Assignment 10 window (Portal)
+        GLuint a10d_portalTexture = 0;
+
+        GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
+                                                         nullptr,                                // No parent - standalone window
+                                                         {0, 0, 800, 600},                       // x, y, width, height
+                                                         "Assignment 10 - Portal (Detached)",    // Title
+                                                         BLACK,
+                                                         {                                       // Textures
+                                                          {{"../Pisa/pisa_posx.hdr",             // HDR cubemap
+                                                            "../Pisa/pisa_negx.hdr",
+                                                            "../Pisa/pisa_posy.hdr",
+                                                            "../Pisa/pisa_negy.hdr",
+                                                            "../Pisa/pisa_posz.hdr",
+                                                            "../Pisa/pisa_negz.hdr"}},
+                                                          {a10d_portalTexture, GL_TEXTURE1}},
+                                                         NONE, // Compute shader
+                                                         {     // Rendering passes
+                                                          {    // Pass 0 - Portal texture generation
+                                                           {NOMARGIN},
+                                                           BLACK,
+                                                           DISABLE,
+                                                           {{QUAD}},
+                                                           NONE,
+                                                           NONE,
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE1, &a10d_portalTexture},
+                                                           {
+#include "Shaders/Shader.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA10Portal.frag.glsl"
+                                                           }},
+                                                          {// Pass 1 - HDR Skybox + Portal
+                                                           {NOMARGIN},
+                                                           BLACK,
+                                                           ENABLE,
+                                                           {{SKYBOX}},
+                                                           {{{0.0f, 1.0f, 4.0f}}},
+                                                           NONE,
+                                                           DEFAULT,
+                                                           {
+#include "Shaders/ShaderA10Sky.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA10Sky.frag.glsl"
+                                                           }}},
+
+                                                         // FocusCallback
+                                                         [](cg::ManagedWindow *pWindow, int focused)
+                                                         {
+                                                             if (focused)
+                                                             {
+                                                                 const char *camModes[] = {"Orbiting", "Walking"};
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "Detached Assignment 10 (Portal)" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "HDR Skybox with Projected Portal Demo" << std::endl;
+                                                                 std::cout << "Camera Mode: " << camModes[pWindow->context.intparam[1]] << std::endl;
+                                                                 std::cout << "Portal Placed: " << (pWindow->context.intparam[0] ? "Yes" : "No") << std::endl;
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "CONTROLS:" << std::endl;
+                                                                 std::cout << "- Left Click: Place portal at mouse position on skybox" << std::endl;
+                                                                 std::cout << "- W key: Walking camera mode" << std::endl;
+                                                                 std::cout << "- O key: Orbiting camera mode" << std::endl;
+                                                                 std::cout << "- Drag: Turn/orbit camera" << std::endl;
+                                                                 std::cout << "- Scroll: Walk forward/backward or zoom" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                             }
+                                                         },
+
+                                                         // InitCallback
+                                                         [](cg::ManagedWindow *pWindow, int pass)
+                                                         {
+                                                             if (pass == -1)
+                                                             {
+                                                                 pWindow->context.intparam[0] = 0;  // Portal not placed
+                                                                 pWindow->context.intparam[1] = 1;  // Walking camera
+
+                                                                 pWindow->passes[1].cameras[0].setType(cg::CameraType::WALKING);
+
+                                                                 pWindow->passes[1].renderShader.use();
+                                                                 pWindow->passes[1].renderShader.setUniform("CubeMapTex", 0);
+                                                                 pWindow->passes[1].renderShader.setUniform("PortalEnabled", 0);
+                                                                 pWindow->passes[1].renderShader.setUniform("ProjectorMatrix", glm::mat4(1.0f));
+                                                             }
+
+                                                             if (pass == 0)
+                                                             {
+                                                                 auto &shader = pWindow->passes[0].renderShader;
+                                                                 shader.use();
+                                                                 shader.setUniform("iTime", static_cast<float>(glfwGetTime()));
+                                                                 shader.setUniform("iResolution", glm::vec2(
+                                                                     static_cast<float>(pWindow->width),
+                                                                     static_cast<float>(pWindow->height)));
+                                                             }
+
+                                                             if (pass == 1)
+                                                             {
+                                                                 auto &shader = pWindow->passes[1].renderShader;
+                                                                 shader.use();
+
+                                                                 auto &camera = pWindow->passes[1].cameras[0];
+
+                                                                 float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                    ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                    : 1.0f;
+                                                                 glm::mat4 V = camera.getLookAt();
+                                                                 glm::mat4 P = camera.getPerspective(aspect);
+
+                                                                 shader.setUniform("V", V);
+                                                                 shader.setUniform("P", P);
+                                                                 shader.setUniform("CubeMapTex", 0);
+                                                                 shader.setUniform("PortalEnabled", pWindow->context.intparam[0]);
+                                                             }
+                                                         },
+
+                                                         // SizeCallback
+                                                         [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                         // KeyCallback
+                                                         [](cg::ManagedWindow *pWindow, int key)
+                                                         {
+                                                             if (key == GLFW_KEY_W)
+                                                             {
+                                                                 pWindow->passes[1].cameras[0].setType(cg::CameraType::WALKING);
+                                                                 pWindow->context.intparam[1] = 1;
+                                                                 std::cout << "Camera mode: Walking" << std::endl;
+                                                                 return false;
+                                                             }
+                                                             else if (key == GLFW_KEY_O)
+                                                             {
+                                                                 pWindow->passes[1].cameras[0].setType(cg::CameraType::ORBITING);
+                                                                 pWindow->context.intparam[1] = 0;
+                                                                 std::cout << "Camera mode: Orbiting" << std::endl;
+                                                                 return false;
+                                                             }
+                                                             return true;
+                                                         },
+
+                                                         // MousebuttonCallback - Click to place portal
+                                                         [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
+                                                         {
+                                                             if (button == GLFW_MOUSE_BUTTON_LEFT)
+                                                             {
+                                                                 float depth = 1.0f;
+                                                                 glReadPixels(xpos, pWindow->height - ypos, 1, 1,
+                                                                              GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
+                                                                 auto &camera = pWindow->passes[1].cameras[0];
+                                                                 float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                    ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                    : 1.0f;
+                                                                 glm::mat4 V = camera.getLookAt();
+                                                                 glm::mat4 P = camera.getPerspective(aspect);
+
+                                                                 glm::vec3 worldPos = glm::unProject(
+                                                                     glm::vec3(xpos, pWindow->height - ypos, depth),
+                                                                     V, P,
+                                                                     glm::vec4(0, 0, pWindow->width, pWindow->height));
+
+                                                                 std::cout << "Portal placed at world position: "
+                                                                           << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << std::endl;
+
+                                                                 glm::vec3 portalDir = glm::normalize(worldPos);
+                                                                 pWindow->context.vec4param[0] = glm::vec4(portalDir, 0.0f);
+                                                                 pWindow->context.intparam[0] = 1;
+
+                                                                 glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+                                                                 if (abs(glm::dot(portalDir, up)) > 0.99f)
+                                                                     up = glm::vec3(0.0f, 0.0f, 1.0f);
+
+                                                                 glm::mat4 projView = glm::lookAt(glm::vec3(0.0f), portalDir, up);
+                                                                 glm::mat4 projProj = glm::perspective(glm::radians(30.0f), 1.0f, 0.1f, 10.0f);
+                                                                 glm::mat4 bias = glm::scale(glm::translate(glm::mat4(1.0f),
+                                                                     glm::vec3(0.5f)), glm::vec3(0.5f));
+
+                                                                 pWindow->passes[1].renderShader.use();
+                                                                 pWindow->passes[1].renderShader.setUniform("ProjectorMatrix", bias * projProj * projView);
+                                                                 pWindow->passes[1].renderShader.setUniform("PortalEnabled", 1);
+
+                                                                 std::cout << "Portal direction: "
+                                                                           << portalDir.x << ", " << portalDir.y << ", " << portalDir.z << std::endl;
+                                                             }
+                                                         },
+
+                                                         // ScrollCallback
+                                                         [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             pWindow->passes[1].cameras[0].onScroll(xoffset, yoffset);
+                                                         },
+
+                                                         // CursorposCallback
+                                                         [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             if (pWindow->context.input.lbutton_down)
+                                                             {
+                                                                 pWindow->passes[1].cameras[0].onCursor(xoffset, yoffset);
                                                              }
                                                          }},
                                                         pMainWindow);
