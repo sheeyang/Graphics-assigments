@@ -20,18 +20,6 @@ namespace cg
             target = { 0.0f, 0.0f, 0.0f }; // Orbiting cameras always target the origin
     }
 
-    void Camera::setPose(const glm::vec3& position, const glm::vec3& target)
-    {
-        this->position = position;
-        this->target = target;
-    }
-
-    void Camera::translate(const glm::vec3& delta)
-    {
-        position += delta;
-        target += delta;
-    }
-
     // Updates the shader program with camera position
     void Camera::setUniforms(Program* pProgram) const
     {

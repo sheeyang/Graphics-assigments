@@ -68,16 +68,6 @@ namespace cg
         // Sets the camera type and updates the target if it's orbiting
         void setType(CameraType cameraType);
 
-        CameraType getType() const { return cameraType; }
-
-        const glm::vec3& getPosition() const { return position; }
-
-        const glm::vec3& getTarget() const { return target; }
-
-        void setPose(const glm::vec3& position, const glm::vec3& target);
-
-        void translate(const glm::vec3& delta);
-
         // Updates the shader program with camera position
         void setUniforms(Program* pProgram) const;
 

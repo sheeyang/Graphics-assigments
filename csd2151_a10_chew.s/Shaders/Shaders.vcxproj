@@ -254,9 +254,6 @@ powershell Compress-Archive -Path "../bin/$(TargetName)" -Update -DestinationPat
   <ItemGroup>
     <None Include="Shaders\Shader.vert.glsl" />
     <None Include="shaders\Shader.frag.glsl" />
-    <None Include="Shaders\ShaderA10Portal.frag.glsl" />
-    <None Include="Shaders\ShaderA10Scene.vert.glsl" />
-    <None Include="Shaders\ShaderA10Scene.frag.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
