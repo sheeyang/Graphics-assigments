@@ -17,11 +17,11 @@ namespace cg
     {
         this->cameraType = cameraType;
         if (cameraType == CameraType::ORBITING)
-            target = { 0.0f, 0.0f, 0.0f }; // Orbiting cameras always target the origin
+            target = {0.0f, 0.0f, 0.0f}; // Orbiting cameras always target the origin
     }
 
     // Updates the shader program with camera position
-    void Camera::setUniforms(Program* pProgram) const
+    void Camera::setUniforms(Program *pProgram) const
     {
         pProgram->setUniform("camera.position", position); // Pass camera position to the shader
     }
@@ -47,8 +47,8 @@ namespace cg
         {
             // Calculate spherical coordinates for orbiting movement
             const float r = glm::sqrt(position.x * position.x +
-                position.y * position.y + position.z * position.z);
-            float alpha = glm::asin(position.y / r); // Vertical angle
+                                      position.y * position.y + position.z * position.z);
+            float alpha = glm::asin(position.y / r);           // Vertical angle
             float betta = std::atan2f(position.x, position.z); // Horizontal angle
 
             // Adjust angles based on cursor offset
@@ -75,7 +75,7 @@ namespace cg
             // Calculate spherical coordinates for walking movement
             const float r = glm::sqrt(
                 (target.x - position.x) * (target.x - position.x) +
-                (target.y - position.y) * (target.y - position.y) + 
+                (target.y - position.y) * (target.y - position.y) +
                 (target.z - position.z) * (target.z - position.z));
             float alpha = glm::asin((target.y - position.y) / r);
             float betta = std::atan2f((target.x - position.x), (target.z - position.z));
@@ -106,7 +106,8 @@ namespace cg
             const float betta = std::atan2f(position.x, position.z);
 
             r += yoffset > 0.0f ? -1.0f : 1.0f; // Zoom in or out
-            if (r < 1.0f) r = 1.0f; // Clamp minimum distance
+            if (r < 1.0f)
+                r = 1.0f; // Clamp minimum distance
 
             // Update position based on new distance
             position.x = r * glm::cos(alpha) * glm::sin(betta);
