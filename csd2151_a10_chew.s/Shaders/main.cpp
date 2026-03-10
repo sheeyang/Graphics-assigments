@@ -3,10 +3,10 @@
 \author Vadim Surov (vsurov@digipen.edu)
 \co-author Chew Shee Yang (chew.s@digipen.edu)
 \par Course: CSD2151
-\par Assignment: 9 (Cartoon)
-\date 03/05/2026 (MM/DD/YYYY)
+\par Assignment: 10 (Portal)
+\date 03/10/2026 (MM/DD/YYYY)
 \brief
-    Application entry point for the Cartoon rendering assignment. Implements a menu
+    Application entry point for the Portal rendering assignment. Implements a menu
     system with subwindows that can be opened in separate windows on double-click.
 
     Features:
@@ -18,6 +18,7 @@
     - Subwindow 5: Assignment 5 (Environment Mapping) demo
     - Subwindow 6: Assignment 8 (Unified Rendering) demo
     - Subwindow 7: Assignment 9 (Cartoon) demo
+    - Subwindow 8: Assignment 10 (Portal) demo
     - Double-click on subwindow to open in new actual window
     - Interactable subwindows with full keyboard/mouse support
 
@@ -40,7 +41,7 @@ const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 12 subwindows max
 const int GRID_GAP = 10;
 
 // Number of active subwindows
-const int NUM_SUBWINDOWS = 7;
+const int NUM_SUBWINDOWS = 8;
 
 // Tab indicator constants (from Assignment 1)
 const int NUM_TABS = 3;
@@ -136,7 +137,7 @@ int main(int argc, char **argv)
         pMainWindow = windowManager.addWindow({cg::State::SHOW,               // State (SHOW, HIDE)
                                                nullptr,                       // Parent window (nullptr for top-level window)
                                                {0, 0, 1024, 768},             // Viewport - x, y, width, height
-                                               "CSD2151 Assignment 9 - Menu", // Title
+                                               "CSD2151 Assignment 10 - Menu", // Title
                                                {0.15f, 0.15f, 0.2f, 1.0f},    // Background color (dark blue-grey)
                                                NONE,                          // Textures
                                                NONE,                          // Compute shader
@@ -162,7 +163,7 @@ int main(int argc, char **argv)
                                                    if (focused)
                                                    {
                                                        std::cout << std::endl;
-                                                       std::cout << "CSD2151 Assignment 9 - Menu (version "
+                                                       std::cout << "CSD2151 Assignment 10 - Menu (version "
                                                                  << __DATE__ << " " << __TIME__ << ")";
                                                        std::cout << std::endl
                                                                  << R"(
@@ -185,6 +186,7 @@ Subwindows:
    - Subwindow 5: Assignment 5 (Environment Mapping) - Skybox with reflection/refraction
    - Subwindow 6: Assignment 8 (Unified Rendering) - PBR, Cartoon, Discard, Fog
    - Subwindow 7: Assignment 9 (Cartoon) - Multi-pass cartoon rendering
+   - Subwindow 8: Assignment 10 (Portal) - Skybox, portal, projected texture
 )";
                                                    }
                                                },
@@ -1517,6 +1519,334 @@ Subwindows:
                                                       }},
                                                      pMainWindow));
 
+        // ====================================================================
+        // SUBWINDOW 8: Assignment 10 (Portal)
+        // ====================================================================
+        // Portal demo with:
+        // - Pass 0: Pisa HDR skybox with cubemap texture
+        // - Pass 1: Procedural portal texture rendered to FBO
+        // - Pass 2: Scene objects with Blinn-Phong + projected portal texture blended with skybox
+        // - Click to place portal at mouse position
+        // - Walking camera enabled by default
+        GLuint a10_portalTex = 0;
+
+        subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                          // State
+                                                      pMainWindow,                              // Parent window
+                                                      {7, GRID_SIZE, GRID_GAP},                 // Grid position: element 7 in grid
+                                                      "Assignment 10 - Portal",                 // Title
+                                                      BLACK,                                    // Background color
+                                                      {                                         // Textures
+                                                       {"../Pisa/pisa_posx.hdr",                // Cubemap - Pisa HDR
+                                                        "../Pisa/pisa_negx.hdr",
+                                                        "../Pisa/pisa_posy.hdr",
+                                                        "../Pisa/pisa_negy.hdr",
+                                                        "../Pisa/pisa_posz.hdr",
+                                                        "../Pisa/pisa_negz.hdr"},
+                                                       {a10_portalTex, GL_TEXTURE1}             // Portal texture (rendered in pass 1)
+                                                      },
+                                                      NONE,                                     // Compute shader
+                                                      {                                         // Rendering passes
+                                                       {                                        // Pass 0 - Skybox
+                                                        {NOMARGIN},                             // Viewport
+                                                        BLACK,                                  // Background color
+                                                        ENABLE,                                 // Depth test
+                                                        {{SKYBOX}},                             // Objects - skybox cube
+                                                        {{{0.0f, 1.0f, 4.0f}}},                 // Camera
+                                                        NONE,                                   // Lights
+                                                        DEFAULT,                                // Rendering target
+                                                        {
+        // Shaders - Assignment 10 skybox
+#include "Shaders/ShaderA10Sky.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA10Sky.frag.glsl"
+                                                        }},
+                                                       {                                        // Pass 1 - Portal texture generation
+                                                        {NOMARGIN},                             // Viewport
+                                                        BLACK,                                  // Background color
+                                                        DISABLE,                                // Depth test
+                                                        {{QUAD}},                               // Objects - fullscreen quad
+                                                        NONE,                                   // Cameras
+                                                        NONE,                                   // Lights
+                                                        {                                       // Rendering target - FBO texture
+                                                         cg::FBO::Type::Texture,
+                                                         GL_TEXTURE1,
+                                                         &a10_portalTex
+                                                        },
+                                                        {
+        // Shaders - Assignment 10 portal
+#include "Shaders/Shader.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA10Portal.frag.glsl"
+                                                        }},
+                                                       {                                        // Pass 2 - Scene with projected portal texture
+                                                        {NOMARGIN},                             // Viewport
+                                                        NONE,                                   // Background color (don't clear, keep skybox)
+                                                        ENABLE,                                 // Depth test
+                                                        {                                       // Objects - plane + objects
+                                                         {PLANE, PHONG_MATERIAL_BLUE,
+                                                          glm::translate(glm::scale(glm::mat4(1.0f), {3.0f, 1.0f, 3.0f}), {0.0f, -1.1f, 0.0f}),
+                                                          VISIBLE},
+                                                         {SPHERE, PHONG_MATERIAL_ORANGE,
+                                                          glm::translate(glm::mat4(1.0f), glm::vec3(2.5f, 0.0f, 0.0f)),
+                                                          VISIBLE},
+                                                         {TORUS, PHONG_MATERIAL_ORANGE,
+                                                          NOTRANSFORM,
+                                                          VISIBLE},
+                                                         {TEAPOT, PHONG_MATERIAL_ORANGE,
+                                                          glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, 0.0f, 0.0f)),
+                                                          VISIBLE}
+                                                        },
+                                                        {{{0.0f, 1.0f, 4.0f}}},                 // Camera (same as skybox)
+                                                        {{{0.0f, 3.0f, 5.0f}}},                 // Lights
+                                                        DEFAULT,                                // Rendering target (screen)
+                                                        {
+        // Shaders - Assignment 10 scene with projected portal
+#include "Shaders/ShaderA10Scene.vert.glsl"
+                                                            ,
+#include "Shaders/ShaderA10Scene.frag.glsl"
+                                                        }}
+                                                      },
+
+                                                      // FocusCallback - Print help info
+                                                      [](cg::ManagedWindow *pWindow, int focused)
+                                                      {
+                                                          if (focused)
+                                                          {
+                                                              const char *camModes[] = {"Orbiting", "Walking"};
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Subwindow 8 (Assignment 10 - Portal)" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "Portal Demo:" << std::endl;
+                                                              std::cout << "- Pisa HDR skybox (cubemap)" << std::endl;
+                                                              std::cout << "- Dynamic procedural portal texture (Shadertoy-style)" << std::endl;
+                                                              std::cout << "- Portal projected onto scene objects (projected texture)" << std::endl;
+                                                              std::cout << "- Portal blended with skybox cubemap" << std::endl;
+                                                              std::cout << "- Click to place portal at mouse position (world coordinates)" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "Camera Mode: " << camModes[pWindow->context.intparam[0]] << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "- Left Click: Place portal at mouse position" << std::endl;
+                                                              std::cout << "- W key: Switch to Walking camera mode" << std::endl;
+                                                              std::cout << "- O key: Switch to Orbiting camera mode" << std::endl;
+                                                              std::cout << "- Shift + Drag: Move light position" << std::endl;
+                                                              std::cout << "- Shift + Scroll: Adjust light distance" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "WALKING MODE (default):" << std::endl;
+                                                              std::cout << "  - Mouse drag horizontally: Turn camera left/right" << std::endl;
+                                                              std::cout << "  - Mouse drag vertically: Look up/down" << std::endl;
+                                                              std::cout << "  - Scroll: Walk forward/backward" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "ORBITING MODE:" << std::endl;
+                                                              std::cout << "  - Mouse drag: Orbit camera around the scene center" << std::endl;
+                                                              std::cout << "  - Scroll: Zoom in/out (move closer/farther from center)" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
+                                                      },
+
+                                                      // InitCallback - Set up uniforms for all passes
+                                                      [](cg::ManagedWindow *pWindow, int pass)
+                                                      {
+                                                          // Initialize parameters on first call
+                                                          if (pass == -1)
+                                                          {
+                                                              // intparam[0]: Camera mode (0=orbiting, 1=walking)
+                                                              // intparam[1]: Portal placed flag
+                                                              // vec4param[0]: Portal world position (xyz) + unused (w)
+                                                              pWindow->context.intparam[0] = 1;  // Walking camera by default
+                                                              pWindow->context.intparam[1] = 0;  // No portal placed yet
+
+                                                              // Default portal position (in front of camera)
+                                                              pWindow->context.vec4param[0] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+                                                              // Set walking camera mode by default
+                                                              pWindow->passes[0].cameras[0].setType(cg::CameraType::WALKING);
+                                                              pWindow->passes[2].cameras[0].setType(cg::CameraType::WALKING);
+
+                                                              std::cout << "Camera mode: Walking (default)" << std::endl;
+                                                              std::cout << "  Drag horizontally to turn, vertically to look up/down" << std::endl;
+                                                              std::cout << "  Scroll to walk forward/backward" << std::endl;
+                                                              std::cout << "  Left-click to place portal at mouse position" << std::endl;
+
+                                                              // Set skybox cubemap uniform
+                                                              pWindow->passes[0].renderShader.use();
+                                                              pWindow->passes[0].renderShader.setUniform("CubeMapTex", 0);
+
+                                                              // Set initial projector matrix for scene shader
+                                                              pWindow->passes[2].renderShader.use();
+                                                              pWindow->passes[2].renderShader.setUniform("CubeMapTex", 0);
+                                                              pWindow->passes[2].renderShader.setUniform("PortalTex", 1);
+
+                                                              // Default projector: looking down at origin
+                                                              glm::mat4 projView = glm::lookAt(
+                                                                  glm::vec3(0.0f, 5.0f, 5.0f),
+                                                                  glm::vec3(0.0f, 0.0f, 0.0f),
+                                                                  glm::vec3(0.0f, 1.0f, 0.0f));
+                                                              glm::mat4 projProj = glm::perspective(glm::radians(30.0f), 1.0f, 0.2f, 1000.0f);
+                                                              glm::mat4 bias = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.5f)), glm::vec3(0.5f));
+
+                                                              pWindow->passes[2].renderShader.setUniform("ProjectorMatrix", bias * projProj * projView);
+                                                          }
+
+                                                          if (pass == 0)
+                                                          {
+                                                              auto &shader = pWindow->passes[0].renderShader;
+                                                              shader.use();
+
+                                                              auto &camera = pWindow->passes[0].cameras[0];
+
+                                                              float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                 ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                 : 1.0f;
+                                                              glm::mat4 V = camera.getLookAt();
+                                                              glm::mat4 P = camera.getPerspective(aspect);
+
+                                                              shader.setUniform("V", V);
+                                                              shader.setUniform("P", P);
+                                                              shader.setUniform("CubeMapTex", 0);
+                                                          }
+
+                                                          // Pass 1: Portal texture - iTime and iResolution set automatically
+
+                                                          if (pass == 2)
+                                                          {
+                                                              auto &shader = pWindow->passes[2].renderShader;
+                                                              shader.use();
+
+                                                              auto &camera = pWindow->passes[2].cameras[0];
+
+                                                              float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                 ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                 : 1.0f;
+                                                              glm::mat4 V = camera.getLookAt();
+                                                              glm::mat4 P = camera.getPerspective(aspect);
+
+                                                              shader.setUniform("V", V);
+                                                              shader.setUniform("P", P);
+
+                                                              // Update projector matrix if portal is placed
+                                                              if (pWindow->context.intparam[1])
+                                                              {
+                                                                  glm::vec3 portalPos = glm::vec3(pWindow->context.vec4param[0]);
+
+                                                                  // Projector looks at the portal position from above
+                                                                  glm::vec3 projPos = portalPos + glm::vec3(0.0f, 5.0f, 3.0f);
+                                                                  glm::mat4 projView = glm::lookAt(projPos, portalPos,
+                                                                      glm::vec3(0.0f, 1.0f, 0.0f));
+                                                                  glm::mat4 projProj = glm::perspective(glm::radians(30.0f), 1.0f, 0.2f, 1000.0f);
+                                                                  glm::mat4 bias = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.5f)), glm::vec3(0.5f));
+
+                                                                  shader.setUniform("ProjectorMatrix", bias * projProj * projView);
+                                                              }
+                                                          }
+                                                      },
+
+                                                      // SizeCallback
+                                                      [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                      // KeyCallback - W/O to switch camera mode
+                                                      [](cg::ManagedWindow *pWindow, int key)
+                                                      {
+                                                          if (key == GLFW_KEY_W)
+                                                          {
+                                                              pWindow->passes[0].cameras[0].setType(cg::CameraType::WALKING);
+                                                              pWindow->passes[2].cameras[0].setType(cg::CameraType::WALKING);
+                                                              pWindow->context.intparam[0] = 1;
+                                                              std::cout << "Camera mode: Walking" << std::endl;
+                                                              std::cout << "  Drag horizontally to turn, vertically to look up/down" << std::endl;
+                                                              std::cout << "  Scroll to walk forward/backward" << std::endl;
+                                                              return false;
+                                                          }
+                                                          else if (key == GLFW_KEY_O)
+                                                          {
+                                                              pWindow->passes[0].cameras[0].setType(cg::CameraType::ORBITING);
+                                                              pWindow->passes[2].cameras[0].setType(cg::CameraType::ORBITING);
+                                                              pWindow->context.intparam[0] = 0;
+                                                              std::cout << "Camera mode: Orbiting" << std::endl;
+                                                              std::cout << "  Drag to orbit around scene, scroll to zoom" << std::endl;
+                                                              return false;
+                                                          }
+                                                          return true;
+                                                      },
+
+                                                      // MousebuttonCallback - Click to place portal
+                                                      [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
+                                                      {
+                                                          if (button == GLFW_MOUSE_BUTTON_LEFT)
+                                                          {
+                                                              // Convert mouse position to world coordinates
+                                                              // Read depth buffer under mouse
+                                                              float depth = 1.0f;
+                                                              glReadPixels(xpos, pWindow->height - ypos, 1, 1,
+                                                                  GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
+                                                              // Only place portal if we clicked on a surface (not sky)
+                                                              if (depth < 1.0f)
+                                                              {
+                                                                  // Convert to world coordinates using glm::unProject
+                                                                  glm::vec3 worldPos = glm::unProject(
+                                                                      glm::vec3(xpos, pWindow->height - ypos, depth),
+                                                                      pWindow->passes[2].cameras[0].getLookAt(),        // view
+                                                                      pWindow->passes[2].cameras[0].getPerspective(
+                                                                          static_cast<float>(pWindow->passes[2].width)
+                                                                          / pWindow->passes[2].height),                 // projection
+                                                                      glm::vec4(0, 0, pWindow->width, pWindow->height)  // viewport
+                                                                  );
+
+                                                                  // Store portal position
+                                                                  pWindow->context.vec4param[0] = glm::vec4(worldPos, 1.0f);
+                                                                  pWindow->context.intparam[1] = 1;  // Portal is placed
+
+                                                                  std::cout << "Portal placed at world position: ("
+                                                                            << worldPos.x << ", "
+                                                                            << worldPos.y << ", "
+                                                                            << worldPos.z << ")" << std::endl;
+                                                              }
+                                                              else
+                                                              {
+                                                                  std::cout << "Clicked on sky - no surface to place portal on" << std::endl;
+                                                              }
+                                                          }
+                                                      },
+
+                                                      // ScrollCallback - Zoom or light adjustment
+                                                      [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          if (mods & GLFW_MOD_SHIFT)
+                                                          {
+                                                              // Shift + Scroll: Adjust light distance
+                                                              pWindow->passes[2].lights[0].onScroll(xoffset, yoffset);
+                                                          }
+                                                          else
+                                                          {
+                                                              // Normal scroll: Zoom / walk (both passes)
+                                                              pWindow->passes[0].cameras[0].onScroll(xoffset, yoffset);
+                                                              pWindow->passes[2].cameras[0].onScroll(xoffset, yoffset);
+                                                          }
+                                                      },
+
+                                                      // CursorposCallback - Orbit/walk camera or move light
+                                                      [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                      {
+                                                          if (pWindow->context.input.lbutton_down)
+                                                          {
+                                                              if (mods & GLFW_MOD_SHIFT)
+                                                              {
+                                                                  // Shift + Drag: Move light
+                                                                  pWindow->passes[2].lights[0].onCursor(xoffset, yoffset);
+                                                              }
+                                                              else
+                                                              {
+                                                                  // Normal drag: Orbit/walk camera (skybox + scene passes)
+                                                                  pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
+                                                                  pWindow->passes[2].cameras[0].onCursor(xoffset, yoffset);
+                                                              }
+                                                          }
+                                                      }},
+                                                     pMainWindow));
+
         // Initialize camera positions for ray casting
         // Set initial camera position to center of map
         for (auto &window : windowManager.windows)
@@ -2711,6 +3041,279 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                                  {
                                                                      pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
                                                                      pWindow->passes[4].cameras[0].onCursor(xoffset, yoffset);
+                                                                 }
+                                                             }
+                                                         }},
+                                                        pMainWindow);
+
+        if (pDetached)
+        {
+            detachedWindows.push_back(pDetached);
+            glfwShowWindow(pDetached);
+            glfwFocusWindow(pDetached);
+        }
+    }
+    else if (subwindowIndex == 7)
+    {
+        // Create detached Assignment 10 window (Portal)
+        GLuint a10d_portalTex = 0;
+
+        GLFWwindow *pDetached = windowManager.addWindow({cg::State::SHOW,
+                                                         nullptr,                                // No parent - standalone window
+                                                         {0, 0, 800, 600},                       // x, y, width, height
+                                                         "Assignment 10 - Portal (Detached)",    // Title
+                                                         BLACK,
+                                                         {                                       // Textures
+                                                          {"../Pisa/pisa_posx.hdr",
+                                                           "../Pisa/pisa_negx.hdr",
+                                                           "../Pisa/pisa_posy.hdr",
+                                                           "../Pisa/pisa_negy.hdr",
+                                                           "../Pisa/pisa_posz.hdr",
+                                                           "../Pisa/pisa_negz.hdr"},
+                                                          {a10d_portalTex, GL_TEXTURE1}
+                                                         },
+                                                         NONE,                                   // Compute shader
+                                                         {                                       // Rendering passes
+                                                          {                                      // Pass 0 - Skybox
+                                                           {NOMARGIN},
+                                                           BLACK,
+                                                           ENABLE,
+                                                           {{SKYBOX}},
+                                                           {{{0.0f, 1.0f, 4.0f}}},
+                                                           NONE,
+                                                           DEFAULT,
+                                                           {
+#include "Shaders/ShaderA10Sky.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA10Sky.frag.glsl"
+                                                           }},
+                                                          {                                      // Pass 1 - Portal texture
+                                                           {NOMARGIN},
+                                                           BLACK,
+                                                           DISABLE,
+                                                           {{QUAD}},
+                                                           NONE,
+                                                           NONE,
+                                                           {cg::FBO::Type::Texture, GL_TEXTURE1, &a10d_portalTex},
+                                                           {
+#include "Shaders/Shader.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA10Portal.frag.glsl"
+                                                           }},
+                                                          {                                      // Pass 2 - Scene
+                                                           {NOMARGIN},
+                                                           NONE,
+                                                           ENABLE,
+                                                           {
+                                                            {PLANE, PHONG_MATERIAL_BLUE,
+                                                             glm::translate(glm::scale(glm::mat4(1.0f), {3.0f, 1.0f, 3.0f}), {0.0f, -1.1f, 0.0f}),
+                                                             VISIBLE},
+                                                            {SPHERE, PHONG_MATERIAL_ORANGE,
+                                                             glm::translate(glm::mat4(1.0f), glm::vec3(2.5f, 0.0f, 0.0f)),
+                                                             VISIBLE},
+                                                            {TORUS, PHONG_MATERIAL_ORANGE,
+                                                             NOTRANSFORM,
+                                                             VISIBLE},
+                                                            {TEAPOT, PHONG_MATERIAL_ORANGE,
+                                                             glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, 0.0f, 0.0f)),
+                                                             VISIBLE}
+                                                           },
+                                                           {{{0.0f, 1.0f, 4.0f}}},
+                                                           {{{0.0f, 3.0f, 5.0f}}},
+                                                           DEFAULT,
+                                                           {
+#include "Shaders/ShaderA10Scene.vert.glsl"
+                                                               ,
+#include "Shaders/ShaderA10Scene.frag.glsl"
+                                                           }}},
+
+                                                         // FocusCallback
+                                                         [](cg::ManagedWindow *pWindow, int focused)
+                                                         {
+                                                             if (focused)
+                                                             {
+                                                                 const char *camModes[] = {"Orbiting", "Walking"};
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "Detached Assignment 10 - Portal" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                                 std::cout << "Camera Mode: " << camModes[pWindow->context.intparam[0]] << std::endl;
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "CONTROLS:" << std::endl;
+                                                                 std::cout << "- Left Click: Place portal at mouse position" << std::endl;
+                                                                 std::cout << "- W key: Switch to Walking camera mode" << std::endl;
+                                                                 std::cout << "- O key: Switch to Orbiting camera mode" << std::endl;
+                                                                 std::cout << "- Shift + Drag: Move light position" << std::endl;
+                                                                 std::cout << "- Shift + Scroll: Adjust light distance" << std::endl;
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "WALKING MODE (default):" << std::endl;
+                                                                 std::cout << "  - Mouse drag horizontally: Turn camera left/right" << std::endl;
+                                                                 std::cout << "  - Mouse drag vertically: Look up/down" << std::endl;
+                                                                 std::cout << "  - Scroll: Walk forward/backward" << std::endl;
+                                                                 std::cout << std::endl;
+                                                                 std::cout << "ORBITING MODE:" << std::endl;
+                                                                 std::cout << "  - Mouse drag: Orbit camera around the scene center" << std::endl;
+                                                                 std::cout << "  - Scroll: Zoom in/out" << std::endl;
+                                                                 std::cout << "========================================" << std::endl;
+                                                             }
+                                                         },
+
+                                                         // InitCallback
+                                                         [](cg::ManagedWindow *pWindow, int pass)
+                                                         {
+                                                             if (pass == -1)
+                                                             {
+                                                                 pWindow->context.intparam[0] = 1;  // Walking camera by default
+                                                                 pWindow->context.intparam[1] = 0;  // No portal placed yet
+                                                                 pWindow->context.vec4param[0] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+                                                                 // Set walking camera mode by default
+                                                                 pWindow->passes[0].cameras[0].setType(cg::CameraType::WALKING);
+                                                                 pWindow->passes[2].cameras[0].setType(cg::CameraType::WALKING);
+
+                                                                 std::cout << "Camera mode: Walking (default)" << std::endl;
+
+                                                                 pWindow->passes[0].renderShader.use();
+                                                                 pWindow->passes[0].renderShader.setUniform("CubeMapTex", 0);
+
+                                                                 pWindow->passes[2].renderShader.use();
+                                                                 pWindow->passes[2].renderShader.setUniform("CubeMapTex", 0);
+                                                                 pWindow->passes[2].renderShader.setUniform("PortalTex", 1);
+
+                                                                 glm::mat4 projView = glm::lookAt(
+                                                                     glm::vec3(0.0f, 5.0f, 5.0f),
+                                                                     glm::vec3(0.0f, 0.0f, 0.0f),
+                                                                     glm::vec3(0.0f, 1.0f, 0.0f));
+                                                                 glm::mat4 projProj = glm::perspective(glm::radians(30.0f), 1.0f, 0.2f, 1000.0f);
+                                                                 glm::mat4 bias = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.5f)), glm::vec3(0.5f));
+
+                                                                 pWindow->passes[2].renderShader.setUniform("ProjectorMatrix", bias * projProj * projView);
+                                                             }
+
+                                                             if (pass == 0)
+                                                             {
+                                                                 auto &shader = pWindow->passes[0].renderShader;
+                                                                 shader.use();
+                                                                 auto &camera = pWindow->passes[0].cameras[0];
+                                                                 float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                    ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                    : 1.0f;
+                                                                 shader.setUniform("V", camera.getLookAt());
+                                                                 shader.setUniform("P", camera.getPerspective(aspect));
+                                                                 shader.setUniform("CubeMapTex", 0);
+                                                             }
+
+                                                             if (pass == 2)
+                                                             {
+                                                                 auto &shader = pWindow->passes[2].renderShader;
+                                                                 shader.use();
+                                                                 auto &camera = pWindow->passes[2].cameras[0];
+                                                                 float aspect = pWindow->width > 0 && pWindow->height > 0
+                                                                                    ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)
+                                                                                    : 1.0f;
+                                                                 shader.setUniform("V", camera.getLookAt());
+                                                                 shader.setUniform("P", camera.getPerspective(aspect));
+
+                                                                 if (pWindow->context.intparam[1])
+                                                                 {
+                                                                     glm::vec3 portalPos = glm::vec3(pWindow->context.vec4param[0]);
+                                                                     glm::vec3 projPos = portalPos + glm::vec3(0.0f, 5.0f, 3.0f);
+                                                                     glm::mat4 projView = glm::lookAt(projPos, portalPos,
+                                                                         glm::vec3(0.0f, 1.0f, 0.0f));
+                                                                     glm::mat4 projProj = glm::perspective(glm::radians(30.0f), 1.0f, 0.2f, 1000.0f);
+                                                                     glm::mat4 bias = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.5f)), glm::vec3(0.5f));
+                                                                     shader.setUniform("ProjectorMatrix", bias * projProj * projView);
+                                                                 }
+                                                             }
+                                                         },
+
+                                                         // SizeCallback
+                                                         [](cg::ManagedWindow *pWindow, int width, int height) {},
+
+                                                         // KeyCallback
+                                                         [](cg::ManagedWindow *pWindow, int key)
+                                                         {
+                                                             if (key == GLFW_KEY_W)
+                                                             {
+                                                                 pWindow->passes[0].cameras[0].setType(cg::CameraType::WALKING);
+                                                                 pWindow->passes[2].cameras[0].setType(cg::CameraType::WALKING);
+                                                                 pWindow->context.intparam[0] = 1;
+                                                                 std::cout << "Camera mode: Walking" << std::endl;
+                                                                 return false;
+                                                             }
+                                                             else if (key == GLFW_KEY_O)
+                                                             {
+                                                                 pWindow->passes[0].cameras[0].setType(cg::CameraType::ORBITING);
+                                                                 pWindow->passes[2].cameras[0].setType(cg::CameraType::ORBITING);
+                                                                 pWindow->context.intparam[0] = 0;
+                                                                 std::cout << "Camera mode: Orbiting" << std::endl;
+                                                                 return false;
+                                                             }
+                                                             return true;
+                                                         },
+
+                                                         // MousebuttonCallback - Click to place portal
+                                                         [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
+                                                         {
+                                                             if (button == GLFW_MOUSE_BUTTON_LEFT)
+                                                             {
+                                                                 float depth = 1.0f;
+                                                                 glReadPixels(xpos, pWindow->height - ypos, 1, 1,
+                                                                     GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
+                                                                 if (depth < 1.0f)
+                                                                 {
+                                                                     glm::vec3 worldPos = glm::unProject(
+                                                                         glm::vec3(xpos, pWindow->height - ypos, depth),
+                                                                         pWindow->passes[2].cameras[0].getLookAt(),
+                                                                         pWindow->passes[2].cameras[0].getPerspective(
+                                                                             static_cast<float>(pWindow->passes[2].width)
+                                                                             / pWindow->passes[2].height),
+                                                                         glm::vec4(0, 0, pWindow->width, pWindow->height)
+                                                                     );
+
+                                                                     pWindow->context.vec4param[0] = glm::vec4(worldPos, 1.0f);
+                                                                     pWindow->context.intparam[1] = 1;
+
+                                                                     std::cout << "Portal placed at world position: ("
+                                                                               << worldPos.x << ", "
+                                                                               << worldPos.y << ", "
+                                                                               << worldPos.z << ")" << std::endl;
+                                                                 }
+                                                                 else
+                                                                 {
+                                                                     std::cout << "Clicked on sky - no surface to place portal on" << std::endl;
+                                                                 }
+                                                             }
+                                                         },
+
+                                                         // ScrollCallback
+                                                         [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             if (mods & GLFW_MOD_SHIFT)
+                                                             {
+                                                                 pWindow->passes[2].lights[0].onScroll(xoffset, yoffset);
+                                                             }
+                                                             else
+                                                             {
+                                                                 pWindow->passes[0].cameras[0].onScroll(xoffset, yoffset);
+                                                                 pWindow->passes[2].cameras[0].onScroll(xoffset, yoffset);
+                                                             }
+                                                         },
+
+                                                         // CursorposCallback
+                                                         [](cg::ManagedWindow *pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+                                                         {
+                                                             if (pWindow->context.input.lbutton_down)
+                                                             {
+                                                                 if (mods & GLFW_MOD_SHIFT)
+                                                                 {
+                                                                     pWindow->passes[2].lights[0].onCursor(xoffset, yoffset);
+                                                                 }
+                                                                 else
+                                                                 {
+                                                                     pWindow->passes[0].cameras[0].onCursor(xoffset, yoffset);
+                                                                     pWindow->passes[2].cameras[0].onCursor(xoffset, yoffset);
                                                                  }
                                                              }
                                                          }},
