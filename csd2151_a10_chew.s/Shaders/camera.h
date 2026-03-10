@@ -71,9 +71,6 @@ namespace cg
         // Updates the shader program with camera position
         void setUniforms(Program* pProgram) const;
 
-        // Returns the current position of the camera
-        glm::vec3 getPosition() const { return position; }
-
         // Returns the view matrix for the camera using the "look at" method
         glm::mat4 getLookAt(glm::vec3 center = { 0.0f, 0.0f, 0.0f }, glm::vec3 up = { 0.0f, 1.0f, 0.0f }) const;
 

@@ -43,18 +43,11 @@ namespace cg
     {
         const float PI05 = glm::pi<float>() / 2.0f; // Half of pi for clamping
 
-        if (xoffset == 0.0 && yoffset == 0.0)
-			return; // No movement, no need to update
-
         if (cameraType == CameraType::ORBITING)
         {
             // Calculate spherical coordinates for orbiting movement
             const float r = glm::sqrt(position.x * position.x +
-                position.y * position.y + position.z * position.z); // Calculate radial distance
-
-            if (r < std::numeric_limits<float>::epsilon())
-                return; // Position at origin, cannot compute spherical coordinates
-
+                position.y * position.y + position.z * position.z);
             float alpha = glm::asin(position.y / r); // Vertical angle
             float betta = std::atan2f(position.x, position.z); // Horizontal angle
 
@@ -87,16 +80,10 @@ namespace cg
             float alpha = glm::asin((target.y - position.y) / r);
             float betta = std::atan2f((target.x - position.x), (target.z - position.z));
 
-            // Adjust angles based on cursor offset
-            if (yoffset < 0.0)
-                alpha += -0.02f;
-            else if (yoffset > 0.0)
-                alpha += 0.02f;
-
-            if (xoffset < 0.0)
-                betta += -0.05f;
-            else if (xoffset > 0.0)
-                betta += 0.05f;
+            // Adjust angles proportionally to cursor offset
+            const float sensitivity = 0.005f;
+            alpha -= static_cast<float>(yoffset) * sensitivity;
+            betta -= static_cast<float>(xoffset) * sensitivity;
 
             // Clamp vertical angle
             alpha = glm::clamp(alpha, -PI05 + 0.01f, PI05 - 0.01f);

@@ -507,7 +507,8 @@ namespace cg
         passes[pass].objects[n].instances[0].isVisible = false;
         passes[pass].objects[n + 1 == size ? start : n + 1].instances[0].isVisible = true;
     }
-    
+
+
     // Special method for demo app to show a selected child window as a stand alone window
     void WindowManager::copyWindow(const ManagedWindow& window)
     {
@@ -714,6 +715,10 @@ namespace cg
 
                         // Store the press position
                         glfwGetCursorPos(pWindow, &pManagedWindow->context.input.pressx, &pManagedWindow->context.input.pressy);
+
+                        // Initialize drag origin to press position to prevent jump on first drag
+                        pManagedWindow->context.input.dragx = pManagedWindow->context.input.pressx;
+                        pManagedWindow->context.input.dragy = pManagedWindow->context.input.pressy;
                     }
                 }
                 else if (action == GLFW_RELEASE)
@@ -978,19 +983,27 @@ namespace cg
                         }
                     }
 
-                    // Configure depth buffer for this pass
-                    if (!pass.enableDepthBuffer.empty())
+                    // Set and clear the depth buffer
+                    if (pass.enableDepthBuffer.size() > 0)
                     {
-                        if (pass.enableDepthBuffer[0])
-                        {
-                            glEnable(GL_DEPTH_TEST);
-                            glDepthFunc(GL_LESS); // Explicitly set depth function
-                            glClear(GL_DEPTH_BUFFER_BIT);
-                        }
+                        GLboolean enableDepthTest;
+                        glGetBooleanv(GL_DEPTH_TEST, &enableDepthTest);
+
+                        // Enable or disable depth testing based on the pass settings
+                        if (enableDepthTest)
+                            if (pass.enableDepthBuffer[0])
+                                glClear(GL_DEPTH_BUFFER_BIT);
+                            else
+                            {
+                                glDisable(GL_DEPTH_TEST);
+                                glClear(GL_DEPTH_BUFFER_BIT);
+                            }
                         else
-                        {
-                            glDisable(GL_DEPTH_TEST);
-                        }
+                            if (pass.enableDepthBuffer[0])
+                            {
+                                glEnable(GL_DEPTH_TEST);
+                                glClear(GL_DEPTH_BUFFER_BIT);
+                            }
                     }
 
                     pass.renderShader.use();
@@ -1067,5 +1080,4 @@ namespace cg
             if (window.pParentWindow == pWindow)
                 window.resize(width, height);
     }
-
 }

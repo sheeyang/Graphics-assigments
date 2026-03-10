@@ -20,6 +20,18 @@
     <None Include="Shaders\Shader.vert.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\ShaderA8Sky.vert.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ShaderA8Sky.frag.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ShaderA8.vert.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ShaderA8.frag.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="program.h">
