@@ -28,14 +28,51 @@ layout(binding=1) uniform sampler2D CartoonTex;
 // Parameters
 uniform float AlphaFactor = 1.0f;   // Edge blending strength (0.0 - 1.0)
 uniform int EdgeEnabled = 1;        // Edge filter toggle (0=off, 1=on)
+uniform int BlurEnabled = 0;        // Blur filter toggle (0=off, 1=on)
+
+// Precomputed normalized Gaussian weights (same as blur passes)
+float Weight[5] = float[5]( 0.158435f, 0.148836f, 0.123389f,
+                            0.0902733f, 0.0582848f );
 
 void main()
 {
     ivec2 pix = ivec2(gl_FragCoord.xy);
 
-    // Sample the edge map and cartoon color using texelFetch
+    // Sample the edge map
     float edgeStrength = texelFetch(EdgeTex, pix, 0).r;
-    vec3 cartoonColor = texelFetch(CartoonTex, pix, 0).rgb;
+
+    // Sample cartoon color, applying Gaussian blur if enabled
+    vec3 cartoonColor;
+    if (BlurEnabled == 1)
+    {
+        // Cross-pattern (H+V) Gaussian blur of cartoon texture
+        vec3 sum = texelFetch(CartoonTex, pix, 0).rgb * Weight[0];
+        // Horizontal
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(-4,0)).rgb * Weight[4];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(-3,0)).rgb * Weight[3];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(-2,0)).rgb * Weight[2];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(-1,0)).rgb * Weight[1];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2( 1,0)).rgb * Weight[1];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2( 2,0)).rgb * Weight[2];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2( 3,0)).rgb * Weight[3];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2( 4,0)).rgb * Weight[4];
+        // Vertical
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(0,-4)).rgb * Weight[4];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(0,-3)).rgb * Weight[3];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(0,-2)).rgb * Weight[2];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(0,-1)).rgb * Weight[1];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(0, 1)).rgb * Weight[1];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(0, 2)).rgb * Weight[2];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(0, 3)).rgb * Weight[3];
+        sum += texelFetchOffset(CartoonTex, pix, 0, ivec2(0, 4)).rgb * Weight[4];
+        // Normalize: center counted once + 8 H offsets + 8 V offsets
+        float totalWeight = Weight[0] + 4.0*(Weight[1]+Weight[2]+Weight[3]+Weight[4]);
+        cartoonColor = sum / totalWeight;
+    }
+    else
+    {
+        cartoonColor = texelFetch(CartoonTex, pix, 0).rgb;
+    }
 
     vec3 finalColor;
     if (EdgeEnabled == 1)

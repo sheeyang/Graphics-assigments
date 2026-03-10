@@ -1447,6 +1447,7 @@ Subwindows:
                                                               glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[4]);
                                                               shader.setUniform("AlphaFactor", pWindow->context.floatparam[3]);
                                                               shader.setUniform("EdgeEnabled", pWindow->context.intparam[2]);
+                                                              shader.setUniform("BlurEnabled", pWindow->context.intparam[1]);
                                                           }
                                                       },
 
