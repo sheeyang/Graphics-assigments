@@ -32,6 +32,15 @@
     <None Include="Shaders\ShaderA8.frag.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\ShaderA10Portal.frag.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ShaderA10Scene.vert.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ShaderA10Scene.frag.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="program.h">

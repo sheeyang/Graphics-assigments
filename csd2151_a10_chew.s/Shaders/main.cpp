@@ -3,10 +3,10 @@
 \author Vadim Surov (vsurov@digipen.edu)
 \co-author Chew Shee Yang (chew.s@digipen.edu)
 \par Course: CSD2151
-\par Assignment: 9 (Cel-Shading Pipeline)
-\date 03/03/2026 (MM/DD/YYYY)
+\par Assignment: 10 (Portal Projection)
+\date 03/10/2026 (MM/DD/YYYY)
 \brief
-    Application entry point for the Cel-Shading Pipeline assignment. Implements a
+    Application entry point for the Portal Projection assignment. Implements a
     menu system with subwindows that can be opened in separate windows on double-click.
 
     Features:
@@ -18,6 +18,7 @@
     - Subwindow 5: Assignment 5 (Environment Mapping) demo
     - Subwindow 6: Assignment 8 (Unified Rendering) demo
     - Subwindow 7: Assignment 9 (Cel-Shading) - 6-pass pipeline with edge detection
+    - Subwindow 8: Assignment 10 (Portal Projection) - skybox, projected portal, and mouse placement
     - Double-click on subwindow to open in new actual window
     - Interactable subwindows with full keyboard/mouse support
 
@@ -40,7 +41,7 @@ const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 12 subwindows max
 const int GRID_GAP = 10;
 
 // Number of active subwindows
-const int NUM_SUBWINDOWS = 7;
+const int NUM_SUBWINDOWS = 8;
 
 // Tab indicator constants (from Assignment 1)
 const int NUM_TABS = 3;
@@ -54,6 +55,15 @@ const double DOUBLE_CLICK_TIME = 0.3;
 // Assignment 4 constants
 constexpr float A4_OBJECT_DISTANCE = 3.0f; // Distance of objects from center
 constexpr float A4_PLANE_SCALE = 2.0f;     // Scale of the floor plane
+
+// Assignment 10 constants
+constexpr int A10_PORTAL_PASS = 0;
+constexpr int A10_SKYBOX_PASS = 1;
+constexpr int A10_SCENE_PASS = 2;
+constexpr int A10_PORTAL_TEXTURE = 0;
+constexpr float A10_PORTAL_WIDTH = 2.4f;
+constexpr float A10_PORTAL_HEIGHT = 3.6f;
+constexpr float A10_MOVE_SPEED = 0.35f;
 
 // ============================================================================
 // Map data for collision detection and shader (passed to GPU)
@@ -102,6 +112,471 @@ std::vector<GLFWwindow *> detachedWindows;
 // Forward declaration for creating detached window
 void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, GLFWwindow *pMainWindow);
 
+namespace
+{
+    glm::vec3 assignment10PortalNormal(const cg::Camera& camera)
+    {
+        glm::vec3 forward = camera.getTarget() - camera.getPosition();
+        forward.y = 0.0f;
+
+        if (glm::length(forward) < 0.0001f)
+            forward = { 0.0f, 0.0f, -1.0f };
+        else
+            forward = glm::normalize(forward);
+
+        return -forward;
+    }
+
+    glm::mat4 assignment10PortalModel(const glm::vec3& anchorPosition, const glm::vec3& portalNormal)
+    {
+        glm::vec3 normal = portalNormal;
+        if (glm::length(normal) < 0.0001f)
+            normal = { 0.0f, 0.0f, 1.0f };
+        else
+            normal = glm::normalize(normal);
+
+        const glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+        glm::vec3 right = glm::cross(worldUp, normal);
+        if (glm::length(right) < 0.0001f)
+            right = { 1.0f, 0.0f, 0.0f };
+        else
+            right = glm::normalize(right);
+
+        glm::mat4 model(1.0f);
+        model[0] = glm::vec4(right * (A10_PORTAL_WIDTH * 0.5f), 0.0f);
+        model[1] = glm::vec4(worldUp * (A10_PORTAL_HEIGHT * 0.5f), 0.0f);
+        model[2] = glm::vec4(normal, 0.0f);
+        model[3] = glm::vec4(anchorPosition + worldUp * (A10_PORTAL_HEIGHT * 0.5f), 1.0f);
+        return model;
+    }
+
+    glm::mat4 assignment10ProjectorMatrix(const glm::vec3& anchorPosition, const glm::vec3& portalNormal)
+    {
+        glm::vec3 normal = portalNormal;
+        if (glm::length(normal) < 0.0001f)
+            normal = { 0.0f, 0.0f, 1.0f };
+        else
+            normal = glm::normalize(normal);
+
+        const glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+        const glm::vec3 portalCenter = anchorPosition + worldUp * (A10_PORTAL_HEIGHT * 0.5f);
+        const glm::vec3 projectorPosition = portalCenter + normal * 0.15f;
+        const glm::vec3 projectorDirection = -normal;
+
+        glm::mat4 projectorView = glm::lookAt(projectorPosition, projectorPosition + projectorDirection, worldUp);
+        glm::mat4 projectorProj = glm::perspective(glm::radians(42.0f), A10_PORTAL_WIDTH / A10_PORTAL_HEIGHT, 0.1f, 80.0f);
+        glm::mat4 bias = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.5f)), glm::vec3(0.5f));
+        return bias * projectorProj * projectorView;
+    }
+
+    void assignment10SetCameraMode(cg::ManagedWindow* pWindow, cg::CameraType cameraType, bool silent = false)
+    {
+        pWindow->passes[A10_SKYBOX_PASS].cameras[0].setType(cameraType);
+        pWindow->passes[A10_SCENE_PASS].cameras[0].setType(cameraType);
+        pWindow->context.intparam[0] = cameraType == cg::CameraType::WALKING ? 1 : 0;
+
+        if (!silent)
+        {
+            if (cameraType == cg::CameraType::WALKING)
+                std::cout << "Camera mode: Walking" << std::endl;
+            else
+                std::cout << "Camera mode: Orbiting" << std::endl;
+        }
+    }
+
+    void assignment10TranslateCamera(cg::ManagedWindow* pWindow, const glm::vec3& delta)
+    {
+        pWindow->passes[A10_SKYBOX_PASS].cameras[0].translate(delta);
+        pWindow->passes[A10_SCENE_PASS].cameras[0].translate(delta);
+    }
+
+    void assignment10UpdatePortalObject(cg::ManagedWindow* pWindow)
+    {
+        auto& portalObject = pWindow->passes[A10_SCENE_PASS].objects.back();
+        const bool portalActive = pWindow->context.intparam[1] != 0;
+        portalObject.instances[0].isVisible = portalActive;
+
+        if (!portalActive)
+            return;
+
+        const glm::vec3 anchorPosition = glm::vec3(pWindow->context.vec4param[0]);
+        const glm::vec3 portalNormal = glm::vec3(pWindow->context.vec4param[1]);
+        portalObject.instances[0].modeltransform = assignment10PortalModel(anchorPosition, portalNormal);
+    }
+
+    void assignment10PlacePortal(cg::ManagedWindow* pWindow, int xpos, int ypos)
+    {
+        GLint previousReadBuffer = GL_BACK;
+        glGetIntegerv(GL_READ_BUFFER, &previousReadBuffer);
+
+        const int readX = glm::clamp(xpos, 0, pWindow->width - 1);
+        const int readY = glm::clamp(pWindow->height - ypos - 1, 0, pWindow->height - 1);
+
+        glReadBuffer(GL_FRONT);
+
+        float depth = 1.0f;
+        glReadPixels(readX, readY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
+        glReadBuffer(previousReadBuffer);
+
+        if (depth >= 1.0f)
+        {
+            std::cout << "Portal placement skipped: click on a visible surface." << std::endl;
+            return;
+        }
+
+        auto& camera = pWindow->passes[A10_SCENE_PASS].cameras[0];
+        glm::vec3 worldPosition = glm::unProject(
+            glm::vec3(static_cast<float>(readX), static_cast<float>(readY), depth),
+            camera.getLookAt(),
+            camera.getPerspective(static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height)),
+            glm::vec4(0.0f, 0.0f, static_cast<float>(pWindow->width), static_cast<float>(pWindow->height)));
+
+        glm::vec3 portalNormal = assignment10PortalNormal(camera);
+
+        pWindow->context.vec4param[0] = glm::vec4(worldPosition, 1.0f);
+        pWindow->context.vec4param[1] = glm::vec4(portalNormal, 0.0f);
+        pWindow->context.intparam[1] = 1;
+
+        assignment10UpdatePortalObject(pWindow);
+
+        std::cout << "Portal placed at: "
+            << worldPosition.x << ", "
+            << worldPosition.y << ", "
+            << worldPosition.z << std::endl;
+    }
+
+    void assignment10FocusCallback(cg::ManagedWindow* pWindow, int focused)
+    {
+        if (!focused)
+            return;
+
+        const char* cameraMode = pWindow->context.intparam[0] == 1 ? "Walking" : "Orbiting";
+        std::cout << std::endl;
+        std::cout << "========================================" << std::endl;
+        std::cout << pWindow->title << std::endl;
+        std::cout << "========================================" << std::endl;
+        std::cout << "Pisa HDR skybox with a projected portal effect." << std::endl;
+        std::cout << "Camera mode: " << cameraMode << " (walking is the default)." << std::endl;
+        std::cout << "CONTROLS:" << std::endl;
+        std::cout << "- Click on visible geometry: place the portal at the mouse world position" << std::endl;
+        std::cout << "- Drag: look around / orbit camera" << std::endl;
+        std::cout << "- Scroll: walk forward-backward / zoom" << std::endl;
+        std::cout << "- W A S D: move the walking camera" << std::endl;
+        std::cout << "- I: switch to walking camera" << std::endl;
+        std::cout << "- O: switch to orbit camera" << std::endl;
+        std::cout << "- Shift + Drag / Scroll: move the light" << std::endl;
+        std::cout << "========================================" << std::endl;
+    }
+
+    void assignment10InitCallback(cg::ManagedWindow* pWindow, int pass)
+    {
+        if (pass == -1)
+        {
+            pWindow->context.intparam[0] = 1;
+            pWindow->context.intparam[1] = 0;
+            pWindow->context.floatparam[0] = 6.0f;
+            pWindow->context.floatparam[1] = 32.0f;
+            pWindow->context.vec4param[0] = glm::vec4(0.0f);
+            pWindow->context.vec4param[1] = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+
+            pWindow->passes[A10_PORTAL_PASS].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE1, &pWindow->context.gluintparam[A10_PORTAL_TEXTURE]);
+
+            pWindow->passes[A10_SKYBOX_PASS].renderShader.use();
+            pWindow->passes[A10_SKYBOX_PASS].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
+            pWindow->passes[A10_SKYBOX_PASS].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+            pWindow->passes[A10_SKYBOX_PASS].renderShader.setUniform("fog.color", glm::vec4(0.02f, 0.03f, 0.06f, 1.0f));
+
+            pWindow->passes[A10_SCENE_PASS].renderShader.use();
+            pWindow->passes[A10_SCENE_PASS].renderShader.setUniform("fog.minDist", pWindow->context.floatparam[0]);
+            pWindow->passes[A10_SCENE_PASS].renderShader.setUniform("fog.maxDist", pWindow->context.floatparam[1]);
+            pWindow->passes[A10_SCENE_PASS].renderShader.setUniform("fog.color", glm::vec4(0.02f, 0.03f, 0.06f, 1.0f));
+            pWindow->passes[A10_SCENE_PASS].renderShader.setUniform("CubeMapTex", 0);
+            pWindow->passes[A10_SCENE_PASS].renderShader.setUniform("PortalTex", 1);
+            pWindow->passes[A10_SKYBOX_PASS].renderShader.setUniform("CubeMapTex", 0);
+
+            assignment10UpdatePortalObject(pWindow);
+        }
+
+        if (pass == A10_SKYBOX_PASS || pass == A10_SCENE_PASS)
+        {
+            auto& shader = pWindow->passes[pass].renderShader;
+            auto& camera = pWindow->passes[pass].cameras[0];
+
+            shader.use();
+
+            const float aspect = pWindow->height > 0 ? static_cast<float>(pWindow->width) / static_cast<float>(pWindow->height) : 1.0f;
+            shader.setUniform("V", camera.getLookAt());
+            shader.setUniform("P", camera.getPerspective(aspect));
+        }
+
+        if (pass == A10_SCENE_PASS)
+        {
+            auto& shader = pWindow->passes[A10_SCENE_PASS].renderShader;
+            shader.use();
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[A10_PORTAL_TEXTURE]);
+
+            const bool portalActive = pWindow->context.intparam[1] != 0;
+            const glm::vec3 anchorPosition = glm::vec3(pWindow->context.vec4param[0]);
+            const glm::vec3 portalNormal = glm::vec3(pWindow->context.vec4param[1]);
+
+            shader.setUniform("PortalActive", portalActive ? 1 : 0);
+            shader.setUniform("PortalPosition", anchorPosition);
+            shader.setUniform("ProjectorMatrix", portalActive ? assignment10ProjectorMatrix(anchorPosition, portalNormal) : glm::mat4(1.0f));
+
+            auto& objects = pWindow->passes[A10_SCENE_PASS].objects;
+            const float time = static_cast<float>(glfwGetTime());
+
+            if (objects.size() > 2)
+            {
+                objects[2].instances[0].modeltransform =
+                    glm::translate(glm::mat4(1.0f), glm::vec3(3.5f, 1.0f + 0.15f * std::sin(time * 1.2f), -7.0f));
+            }
+
+            if (objects.size() > 3)
+            {
+                objects[3].instances[0].modeltransform =
+                    glm::translate(glm::mat4(1.0f), glm::vec3(-3.0f, 1.0f, -11.0f)) *
+                    glm::rotate(glm::mat4(1.0f), time * 0.7f, glm::vec3(0.0f, 1.0f, 0.0f));
+            }
+
+            assignment10UpdatePortalObject(pWindow);
+        }
+    }
+
+    bool assignment10KeyCallback(cg::ManagedWindow* pWindow, int key)
+    {
+        if (key == GLFW_KEY_I)
+        {
+            assignment10SetCameraMode(pWindow, cg::CameraType::WALKING);
+            return false;
+        }
+
+        if (key == GLFW_KEY_O)
+        {
+            assignment10SetCameraMode(pWindow, cg::CameraType::ORBITING);
+            return false;
+        }
+
+        if (pWindow->context.intparam[0] != 1)
+            return true;
+
+        auto& camera = pWindow->passes[A10_SCENE_PASS].cameras[0];
+        glm::vec3 forward = camera.getTarget() - camera.getPosition();
+        forward.y = 0.0f;
+        if (glm::length(forward) < 0.0001f)
+            forward = { 0.0f, 0.0f, -1.0f };
+        else
+            forward = glm::normalize(forward);
+
+        glm::vec3 right = glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f));
+        if (glm::length(right) < 0.0001f)
+            right = { 1.0f, 0.0f, 0.0f };
+        else
+            right = glm::normalize(right);
+
+        glm::vec3 delta(0.0f);
+
+        if (key == GLFW_KEY_W)
+            delta = forward * A10_MOVE_SPEED;
+        else if (key == GLFW_KEY_S)
+            delta = -forward * A10_MOVE_SPEED;
+        else if (key == GLFW_KEY_A)
+            delta = -right * A10_MOVE_SPEED;
+        else if (key == GLFW_KEY_D)
+            delta = right * A10_MOVE_SPEED;
+
+        if (glm::length(delta) > 0.0f)
+        {
+            assignment10TranslateCamera(pWindow, delta);
+            return false;
+        }
+
+        return true;
+    }
+
+    void assignment10MousebuttonCallback(cg::ManagedWindow* pWindow, int button, int xpos, int ypos)
+    {
+        if (button != GLFW_MOUSE_BUTTON_LEFT)
+            return;
+
+        assignment10PlacePortal(pWindow, xpos, ypos);
+    }
+
+    void assignment10ScrollCallback(cg::ManagedWindow* pWindow, double xoffset, double yoffset, int mods)
+    {
+        if (mods & GLFW_MOD_SHIFT)
+        {
+            pWindow->passes[A10_SCENE_PASS].lights[0].onScroll(xoffset, yoffset);
+            return;
+        }
+
+        pWindow->passes[A10_SKYBOX_PASS].cameras[0].onScroll(xoffset, yoffset);
+        pWindow->passes[A10_SCENE_PASS].cameras[0].onScroll(xoffset, yoffset);
+    }
+
+    void assignment10CursorCallback(cg::ManagedWindow* pWindow, int xpos, int ypos, double xoffset, double yoffset, int mods)
+    {
+        if (!pWindow->context.input.lbutton_down)
+            return;
+
+        if (mods & GLFW_MOD_SHIFT)
+        {
+            pWindow->passes[A10_SCENE_PASS].lights[0].onCursor(xoffset, yoffset);
+            return;
+        }
+
+        pWindow->passes[A10_SKYBOX_PASS].cameras[0].onCursor(xoffset, yoffset);
+        pWindow->passes[A10_SCENE_PASS].cameras[0].onCursor(xoffset, yoffset);
+    }
+
+    cg::ManagedWindow makeAssignment10Window(GLFWwindow* parentWindow, const std::vector<int>& viewport, const char* title)
+    {
+        return {
+            cg::State::SHOW,
+            parentWindow,
+            viewport,
+            title,
+            { 0.02f, 0.03f, 0.06f, 1.0f },
+            {
+                {
+                    {
+                        "../Pisa/pisa_posx.hdr",
+                        "../Pisa/pisa_negx.hdr",
+                        "../Pisa/pisa_posy.hdr",
+                        "../Pisa/pisa_negy.hdr",
+                        "../Pisa/pisa_posz.hdr",
+                        "../Pisa/pisa_negz.hdr"
+                    },
+                    GL_TEXTURE0
+                }
+            },
+            NONE,
+            {
+                {
+                    { NOMARGIN },
+                    { 0.0f, 0.0f, 0.0f, 0.0f },
+                    DISABLE,
+                    { { QUAD } },
+                    NONE,
+                    NONE,
+                    DEFAULT,
+                    {
+#include "Shaders/Shader.vert.glsl"
+                        ,
+#include "Shaders/ShaderA10Portal.frag.glsl"
+                    }
+                },
+                {
+                    { NOMARGIN },
+                    { 0.02f, 0.03f, 0.06f, 1.0f },
+                    ENABLE,
+                    { { SKYBOX } },
+                    { { cg::CameraType::WALKING, { 0.0f, 1.4f, 9.0f }, { 0.0f, 1.4f, 8.0f }, 55.0f, 0.1f, 250.0f } },
+                    NONE,
+                    DEFAULT,
+                    {
+#include "Shaders/ShaderA8Sky.vert.glsl"
+                        ,
+#include "Shaders/ShaderA8Sky.frag.glsl"
+                    }
+                },
+                {
+                    { NOMARGIN },
+                    NONE,
+                    ENABLE,
+                    {
+                        {
+                            PLANE,
+                            {
+                                { "material.shininess", { 32.0f } },
+                                { "material.Ka", { 0.04f, 0.05f, 0.06f } },
+                                { "material.Kd", { 0.18f, 0.22f, 0.26f } },
+                                { "material.Ks", { 0.16f, 0.18f, 0.20f } },
+                                { "material.color", { 0.18f, 0.22f, 0.26f } },
+                                { "material.effect", { 0.0f } }
+                            },
+                            glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.2f, 0.0f)) *
+                                glm::scale(glm::mat4(1.0f), glm::vec3(1.8f, 1.0f, 1.8f)),
+                            VISIBLE
+                        },
+                        {
+                            CUBE,
+                            {
+                                { "material.shininess", { 96.0f } },
+                                { "material.Ka", { 0.10f, 0.08f, 0.04f } },
+                                { "material.Kd", { 0.58f, 0.42f, 0.18f } },
+                                { "material.Ks", { 0.95f, 0.85f, 0.60f } },
+                                { "material.color", { 0.58f, 0.42f, 0.18f } },
+                                { "material.effect", { 0.0f } }
+                            },
+                            glm::translate(glm::mat4(1.0f), glm::vec3(-4.5f, 1.0f, -4.0f)) *
+                                glm::scale(glm::mat4(1.0f), glm::vec3(1.2f, 2.0f, 1.2f)),
+                            VISIBLE
+                        },
+                        {
+                            SPHERE,
+                            {
+                                { "material.shininess", { 140.0f } },
+                                { "material.Ka", { 0.05f, 0.08f, 0.10f } },
+                                { "material.Kd", { 0.22f, 0.58f, 0.78f } },
+                                { "material.Ks", { 0.85f, 0.95f, 1.00f } },
+                                { "material.color", { 0.22f, 0.58f, 0.78f } },
+                                { "material.effect", { 0.0f } }
+                            },
+                            glm::translate(glm::mat4(1.0f), glm::vec3(3.5f, 1.0f, -7.0f)),
+                            VISIBLE
+                        },
+                        {
+                            TORUS,
+                            {
+                                { "material.shininess", { 90.0f } },
+                                { "material.Ka", { 0.08f, 0.04f, 0.10f } },
+                                { "material.Kd", { 0.56f, 0.28f, 0.72f } },
+                                { "material.Ks", { 0.92f, 0.84f, 0.98f } },
+                                { "material.color", { 0.56f, 0.28f, 0.72f } },
+                                { "material.effect", { 0.0f } }
+                            },
+                            glm::translate(glm::mat4(1.0f), glm::vec3(-3.0f, 1.0f, -11.0f)),
+                            VISIBLE
+                        },
+                        {
+                            QUAD,
+                            {
+                                { "material.shininess", { 180.0f } },
+                                { "material.Ka", { 0.02f, 0.04f, 0.08f } },
+                                { "material.Kd", { 0.30f, 0.55f, 0.95f } },
+                                { "material.Ks", { 1.00f, 1.00f, 1.00f } },
+                                { "material.color", { 0.30f, 0.55f, 0.95f } },
+                                { "material.effect", { 1.0f } }
+                            },
+                            NOTRANSFORM,
+                            INVISIBLE
+                        }
+                    },
+                    { { cg::CameraType::WALKING, { 0.0f, 1.4f, 9.0f }, { 0.0f, 1.4f, 8.0f }, 55.0f, 0.1f, 250.0f } },
+                    { { { 4.0f, 7.0f, 6.0f } } },
+                    DEFAULT,
+                    {
+#include "Shaders/ShaderA10Scene.vert.glsl"
+                        ,
+#include "Shaders/ShaderA10Scene.frag.glsl"
+                    }
+                }
+            },
+            assignment10FocusCallback,
+            assignment10InitCallback,
+            [](cg::ManagedWindow* pWindow, int width, int height) {},
+            assignment10KeyCallback,
+            assignment10MousebuttonCallback,
+            assignment10ScrollCallback,
+            assignment10CursorCallback
+        };
+    }
+}
+
 // Entry point of the application
 int main(int argc, char **argv)
 {
@@ -136,7 +611,7 @@ int main(int argc, char **argv)
         pMainWindow = windowManager.addWindow({cg::State::SHOW,               // State (SHOW, HIDE)
                                                nullptr,                       // Parent window (nullptr for top-level window)
                                                {0, 0, 1024, 768},             // Viewport - x, y, width, height
-                                               "CSD2151 Assignment 9 - Menu", // Title
+                                               "CSD2151 Assignment 10 - Menu", // Title
                                                {0.15f, 0.15f, 0.2f, 1.0f},    // Background color (dark blue-grey)
                                                NONE,                          // Textures
                                                NONE,                          // Compute shader
@@ -162,7 +637,7 @@ int main(int argc, char **argv)
                                                    if (focused)
                                                    {
                                                        std::cout << std::endl;
-                                                       std::cout << "CSD2151 Assignment 9 - Menu (version "
+                                                       std::cout << "CSD2151 Assignment 10 - Menu (version "
                                                                  << __DATE__ << " " << __TIME__ << ")";
                                                        std::cout << std::endl
                                                                  << R"(
@@ -184,7 +659,8 @@ Subwindows:
    - Subwindow 4: Assignment 4 (Blinn-Phong) - 3D shaded objects with lighting
    - Subwindow 5: Assignment 5 (Environment Mapping) - Skybox with reflection/refraction
    - Subwindow 6: Assignment 8 (Unified Rendering) - PBR, Cartoon, Discard, Fog
-   - Subwindow 7: Assignment 9 (Cel-Shading) - 6-pass cel-shading pipeline with edge detection
+    - Subwindow 7: Assignment 9 (Cel-Shading) - 6-pass cel-shading pipeline with edge detection
+    - Subwindow 8: Assignment 10 (Portal Projection) - Pisa skybox, projected portal, click-to-place
 )";
                                                    }
                                                },
@@ -1550,6 +2026,16 @@ Subwindows:
                                                       }},
                                                      pMainWindow));
 
+        // ====================================================================
+        // SUBWINDOW 8: Assignment 10 (Portal Projection)
+        // ====================================================================
+        subwindows.push_back(windowManager.addWindow(
+            makeAssignment10Window(
+                pMainWindow,
+                {7, GRID_SIZE, GRID_GAP},
+                "Assignment 10 - Portal Projection"),
+            pMainWindow));
+
         // Initialize camera positions for ray casting
         // Set initial camera position to center of map
         for (auto &window : windowManager.windows)
@@ -2808,6 +3294,22 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                              }
                                                          }},
                                                         pMainWindow);
+
+        if (pDetached)
+        {
+            detachedWindows.push_back(pDetached);
+            glfwShowWindow(pDetached);
+            glfwFocusWindow(pDetached);
+        }
+    }
+    else if (subwindowIndex == 7)
+    {
+        GLFWwindow* pDetached = windowManager.addWindow(
+            makeAssignment10Window(
+                nullptr,
+                {0, 0, 800, 600},
+                "Assignment 10 - Portal Projection (Detached)"),
+            pMainWindow);
 
         if (pDetached)
         {
