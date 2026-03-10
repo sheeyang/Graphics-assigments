@@ -19,15 +19,8 @@ layout(location=0) out vec4 FragColor;
 
 void main()
 {
-    // Sample the HDR cubemap
-    vec3 hdrColor = texture(CubeMapTex, Vec).rgb;
-
-    // Simple Reinhard tone mapping for HDR -> LDR
-    vec3 mapped = hdrColor / (hdrColor + vec3(1.0));
-
-    // Gamma correction
-    mapped = pow(mapped, vec3(1.0 / 2.2));
-
-    FragColor = vec4(mapped, 1.0);
+    // Sample the cubemap (LDR PNG - already sRGB, output directly)
+    vec3 color = texture(CubeMapTex, Vec).rgb;
+    FragColor = vec4(color, 1.0);
 }
 )"

@@ -1565,27 +1565,27 @@ Subwindows:
         // - floatparam[0]: Portal screen-space radius
         // - gluintparam[0]: Portal FBO texture ID
         {
-            subwindows.push_back(windowManager.addWindow({cg::State::SHOW,           // State
-                                                          pMainWindow,               // Parent window
-                                                          {7, GRID_SIZE, GRID_GAP},  // Grid position: element 7 in grid
-                                                          "Assignment 10 - Portal",  // Title
-                                                          BLACK,                     // Background color
-                                                          {{"../Pisa/pisa_posx.hdr", // Cubemap textures (HDR)
-                                                            "../Pisa/pisa_negx.hdr", // Order: +X, -X, +Y, -Y, +Z, -Z
-                                                            "../Pisa/pisa_posy.hdr",
-                                                            "../Pisa/pisa_negy.hdr",
-                                                            "../Pisa/pisa_posz.hdr",
-                                                            "../Pisa/pisa_negz.hdr"}}, // Cubemap only; portal FBO texture bound manually
-                                                          NONE,                        // Compute shader
-                                                          {                            // Rendering passes
-                                                           {                           // Pass 0 - Portal texture to FBO
-                                                            {NOMARGIN},                // Viewport
-                                                            BLACK,                     // Background color
-                                                            DISABLE,                   // Depth test
-                                                            {{QUAD}},                  // Fullscreen quad
-                                                            NONE,                      // No camera
-                                                            NONE,                      // No lights
-                                                            DEFAULT,                   // FBO (configured in initCallback)
+            subwindows.push_back(windowManager.addWindow({cg::State::SHOW,                // State
+                                                          pMainWindow,                    // Parent window
+                                                          {7, GRID_SIZE, GRID_GAP},       // Grid position: element 7 in grid
+                                                          "Assignment 10 - Portal",       // Title
+                                                          BLACK,                          // Background color
+                                                          {{"../NightSky/night_posx.png", // Cubemap textures (LDR PNG)
+                                                            "../NightSky/night_negx.png", // Order: +X, -X, +Y, -Y, +Z, -Z
+                                                            "../NightSky/night_posy.png",
+                                                            "../NightSky/night_negy.png",
+                                                            "../NightSky/night_posz.png",
+                                                            "../NightSky/night_negz.png"}}, // Cubemap only; portal FBO texture bound manually
+                                                          NONE,                             // Compute shader
+                                                          {                                 // Rendering passes
+                                                           {                                // Pass 0 - Portal texture to FBO
+                                                            {NOMARGIN},                     // Viewport
+                                                            BLACK,                          // Background color
+                                                            DISABLE,                        // Depth test
+                                                            {{QUAD}},                       // Fullscreen quad
+                                                            NONE,                           // No camera
+                                                            NONE,                           // No lights
+                                                            DEFAULT,                        // FBO (configured in initCallback)
                                                             {
 #include "Shaders/Shader.vert.glsl"
                                                                 ,
@@ -1629,7 +1629,7 @@ Subwindows:
                                                                   std::cout << "========================================" << std::endl;
                                                                   std::cout << std::endl;
                                                                   std::cout << "Portal on Skybox Demo:" << std::endl;
-                                                                  std::cout << "- Pisa HDR skybox (cubemap environment)" << std::endl;
+                                                                  std::cout << "- Night Sky cubemap environment" << std::endl;
                                                                   std::cout << "- Procedural portal texture (time-animated)" << std::endl;
                                                                   std::cout << "- Portal rendered on skybox" << std::endl;
                                                                   std::cout << "- Click to place portal in the sky" << std::endl;
@@ -3040,12 +3040,12 @@ void createDetachedWindow(cg::WindowManager &windowManager, int subwindowIndex, 
                                                          {0, 0, 800, 600},
                                                          "Assignment 10 - Portal (Detached)",
                                                          BLACK,
-                                                         {{"../Pisa/pisa_posx.hdr",
-                                                           "../Pisa/pisa_negx.hdr",
-                                                           "../Pisa/pisa_posy.hdr",
-                                                           "../Pisa/pisa_negy.hdr",
-                                                           "../Pisa/pisa_posz.hdr",
-                                                           "../Pisa/pisa_negz.hdr"}},
+                                                         {{"../NightSky/night_posx.png",
+                                                           "../NightSky/night_negx.png",
+                                                           "../NightSky/night_posy.png",
+                                                           "../NightSky/night_negy.png",
+                                                           "../NightSky/night_posz.png",
+                                                           "../NightSky/night_negz.png"}},
                                                          NONE,
                                                          {{// Pass 0 - Portal texture to FBO
                                                            {NOMARGIN},
