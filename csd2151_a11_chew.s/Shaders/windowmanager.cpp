@@ -741,11 +741,15 @@ namespace cg
                         const double dyLast = ypos - pManagedWindow->context.input.lastClickY;
                         const double lastDistSq = dxLast * dxLast + dyLast * dyLast;
 
-                        if (dt > 0.0 && dt <= doubleClickTime && lastDistSq < clickThreshold * clickThreshold &&
-                                pManagedWindow->mousedoubleclickCallback && isClick)
+                        if (dt > 0.0 && dt <= doubleClickTime && lastDistSq < clickThreshold * clickThreshold && isClick)
                         {
-                            glfwMakeContextCurrent(pManagedWindow->pWindow);
-                            pManagedWindow->mousedoubleclickCallback(pManagedWindow, static_cast<int>(xpos), static_cast<int>(ypos));
+                            if (pManagedWindow->pParentWindow)
+                                WindowManager::getInstance().copyWindow(*pManagedWindow);
+                            else if (pManagedWindow->mousedoubleclickCallback)
+                            {
+                                glfwMakeContextCurrent(pManagedWindow->pWindow);
+                                pManagedWindow->mousedoubleclickCallback(pManagedWindow, static_cast<int>(xpos), static_cast<int>(ypos));
+                            }
                         }
                         else if (pManagedWindow->mouseclickCallback && isClick)
                         {
