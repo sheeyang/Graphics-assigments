@@ -116,132 +116,27 @@ bool canMoveTo(float x, float y)
 std::vector<GLFWwindow *> subwindows;
 
 // ============================================================================
-// Ogre instancing grid configuration (A11)
-// 11x11 grid, spacing = 3.5f, symmetric around origin.
-// X/Z positions: -17.5, -14.0, -10.5, -7.0, -3.5, 0.0, 3.5, 7.0, 10.5, 14.0, 17.5
+// MAKE_OGRE_OBJECT(meshName, xSize, ySize, spacing)
+//   Expands to a cg::Object whose instances form an xSize x ySize grid
+//   centered at the origin with the given spacing between each ogre.
 // ============================================================================
-#define OGRE_INSTANCES \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f, -17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f, -14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f, -10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f,  -7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f,  -3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f,   0.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f,   3.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f,   7.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f,  10.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f,  14.0f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-17.5f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-14.0f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(-10.5f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -7.0f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( -3.5f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  3.5f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3(  7.0f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 10.5f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 14.0f, 0.0f,  17.5f)), VISIBLE }, \
-    { MATERIAL_OBJECT, glm::translate(glm::mat4(1.0f), glm::vec3( 17.5f, 0.0f,  17.5f)), VISIBLE }
+#define MAKE_OGRE_OBJECT(meshName, xSize, ySize, spacing)            \
+    ([&]() {                                                         \
+        cg::Object _obj{(meshName), MATERIAL_OBJECT};                \
+        _obj.instances.clear();                                      \
+        _obj.instances.reserve((xSize) * (ySize));                   \
+        float _hx = ((xSize) - 1) * (spacing) * 0.5f;               \
+        float _hz = ((ySize) - 1) * (spacing) * 0.5f;               \
+        for (int _r = 0; _r < (ySize); ++_r)                        \
+            for (int _c = 0; _c < (xSize); ++_c)                    \
+                _obj.instances.push_back({MATERIAL_OBJECT,           \
+                    glm::translate(glm::mat4(1.0f),                  \
+                        glm::vec3(_c*(spacing)-_hx, 0.0f,           \
+                                  _r*(spacing)-_hz)), VISIBLE});     \
+        return _obj;                                                 \
+    }())
+
+
 
 // Entry point of the application
 int main(int argc, char **argv)
@@ -1481,7 +1376,7 @@ Subwindows:
                                        {NOMARGIN},
                                        BLACK,
                                        ENABLE,
-                                       {{"../Ogre/bs_ears.obj", {OGRE_INSTANCES}}},
+                                       {{MAKE_OGRE_OBJECT("../Ogre/bs_ears.obj", 11, 21, 3.5f)}},
                                        {{{0.0f, 2.0f, 20.0f}}},
                                        {{{5.0f, 5.0f, 10.0f}}},
                                        {cg::FBO::Deferred,
