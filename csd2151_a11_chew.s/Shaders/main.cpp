@@ -1569,10 +1569,18 @@ Subwindows:
 
                                          if (pass == 1)
                                          {
+                                             // Unbind the G-buffer FBO before sampling from its textures.
+                                             // The render loop calls initCallback BEFORE pass.fbo.bind(), so
+                                             // the G-buffer FBO from pass 0 is still bound here. Binding its
+                                             // textures as samplers while they're attached to the active FBO
+                                             // is an OpenGL feedback loop (undefined behaviour) which causes
+                                             // occasional screen flashing on certain drivers.
+                                             glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
                                              auto &shader = pWindow->passes[1].renderShader;
                                              shader.use();
 
-                                              // Bind G-buffer textures to the lighting pass shader
+                                             // Bind G-buffer textures to the lighting pass shader
                                              // G-buffer bindings: gPosition=0, gNormal=1, gTexCoord=2
                                              // The window manager binds diffuse at GL_TEXTURE4 automatically.
                                              glActiveTexture(GL_TEXTURE0);

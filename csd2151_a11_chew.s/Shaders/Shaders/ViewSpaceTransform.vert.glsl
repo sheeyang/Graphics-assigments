@@ -8,6 +8,7 @@ R"(
     layout(location=0) in vec3 VertexPosition;
     layout(location=1) in vec3 VertexNormal;
     layout(location=2) in vec2 VertexTexCoord;
+    layout(location=3) in vec4 VertexTangent;
 
     uniform mat4 M;     // Model transform matrix
     uniform mat4 V;     // View transform matrix
@@ -16,13 +17,21 @@ R"(
     out vec3 Position;  // Position in view space
     out vec3 Normal;    // Normal in view space
     out vec2 TexCoord;
+    out vec3 Tangent;   // Tangent in view space
+    out vec3 Binormal;  // Binormal in view space
 
     void main()
     {
         mat4 MV = V * M;
         mat3 N = mat3(transpose(inverse(MV)));
 
-        Normal = normalize(N * VertexNormal);
+        vec3 norm = normalize(N * VertexNormal);
+        vec3 tang = normalize(N * vec3(VertexTangent));
+        vec3 binorm = normalize(cross(norm, tang)) * VertexTangent.w;
+
+        Normal   = norm;
+        Tangent  = tang;
+        Binormal = binorm;
 
         vec4 VertexPositionInView = MV * vec4(VertexPosition, 1.0f);
         Position = vec3(VertexPositionInView);
