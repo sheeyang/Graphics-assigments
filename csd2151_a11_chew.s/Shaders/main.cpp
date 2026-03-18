@@ -1416,7 +1416,7 @@ Subwindows:
                                              std::cout << "  Pass 0: Geometry - fills G-buffer (position, normal, texcoord)" << std::endl;
                                              std::cout << "  Pass 1: Lighting - Blinn-Phong with diffuse texture" << std::endl;
                                              std::cout << std::endl;
-                                              std::cout << "Scene: 4x4 grid of Ogre instances" << std::endl;
+                                             std::cout << "Scene: 11x21 grid of Ogre instances (231 total)" << std::endl;
                                              std::cout << std::endl;
                                              std::cout << "CONTROLS:" << std::endl;
                                              std::cout << "  Mouse drag:        Orbit camera" << std::endl;
