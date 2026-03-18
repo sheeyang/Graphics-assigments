@@ -3,7 +3,7 @@
 setlocal enabledelayedexpansion
 
 REM === Configuration ===
-set "BASENAME=csd2151_a9_chew.s"
+set "BASENAME=csd2151_a10_chew.s"
 set "SRC_DIR=%~dp0%BASENAME%"
 
 REM Validate source folder exists
