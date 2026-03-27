@@ -1269,7 +1269,17 @@ Subwindows:
                                                           [](cg::ManagedWindow *pWindow, int focused)
                                                           {
                                                               if (focused)
-                                                                  std::cout << "Subwindow 8 (Assignment 10 - Portal) focused" << std::endl;
+                                                              {
+                                                                  std::cout << std::endl;
+                                                                  std::cout << "========================================" << std::endl;
+                                                                  std::cout << "Assignment 10 - Portal with Skybox" << std::endl;
+                                                                  std::cout << "========================================" << std::endl;
+                                                                  std::cout << "CONTROLS:" << std::endl;
+                                                                  std::cout << "  Left drag:   Rotate/move walking camera" << std::endl;
+                                                                  std::cout << "  Scroll:      Move forward/backward" << std::endl;
+                                                                  std::cout << "  Left click:  Place portal at that direction" << std::endl;
+                                                                  std::cout << "========================================" << std::endl;
+                                                              }
                                                           },
 
                                                           // InitCallback
@@ -1278,7 +1288,7 @@ Subwindows:
                                                               if (pass == -1)
                                                               {
                                                                   pWindow->passes[1].cameras[0].setType(cg::CameraType::WALKING);
-                                                                  pWindow->context.vec4param[0] = glm::vec4(0.0f, 0.0f, -1.0f, 1.0f);
+                                                                  pWindow->context.vec4param[0] = glm::vec4(0.0f, 1.0f, -46.0f, 1.0f);
                                                                   pWindow->context.floatparam[0] = 0.2f;
                                                                   pWindow->passes[0].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE1, &pWindow->context.gluintparam[0]);
                                                               }
@@ -1296,8 +1306,8 @@ Subwindows:
                                                                   glActiveTexture(GL_TEXTURE1);
                                                                   glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]);
                                                                   pWindow->passes[2].renderShader.use();
-                                                                  glm::vec3 portalDir = glm::vec3(pWindow->context.vec4param[0]);
-                                                                  pWindow->passes[2].renderShader.setUniform("PortalDir", portalDir);
+                                                                  glm::vec3 portalPos = glm::vec3(pWindow->context.vec4param[0]);
+                                                                  pWindow->passes[2].renderShader.setUniform("PortalPos", portalPos);
                                                                   pWindow->passes[2].renderShader.setUniform("PortalRadius", pWindow->context.floatparam[0]);
                                                                   auto &cam = pWindow->passes[1].cameras[0];
                                                                   float aspect = pWindow->width > 0 && pWindow->height > 0
@@ -1320,23 +1330,7 @@ Subwindows:
                                                           },
 
                                                           // MousebuttonCallback
-                                                          [](cg::ManagedWindow *pWindow, int button, int xpos, int ypos)
-                                                          {
-                                                              if (button == GLFW_MOUSE_BUTTON_LEFT)
-                                                              {
-                                                                  auto &cam = pWindow->passes[1].cameras[0];
-                                                                  float aspect = static_cast<float>(pWindow->width) / std::max(static_cast<float>(pWindow->height), 1.0f);
-                                                                  glm::mat4 Vinv = glm::inverse(cam.getLookAt());
-                                                                  glm::mat4 Pinv = glm::inverse(cam.getPerspective(aspect));
-                                                                  float ndcX = (2.0f * xpos / pWindow->width) - 1.0f;
-                                                                  float ndcY = 1.0f - (2.0f * ypos / pWindow->height);
-                                                                  glm::vec4 clipDir = glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
-                                                                  glm::vec4 viewDir = Pinv * clipDir;
-                                                                  viewDir = glm::vec4(viewDir.x, viewDir.y, -1.0f, 0.0f);
-                                                                  glm::vec3 worldDir = glm::normalize(glm::vec3(Vinv * viewDir));
-                                                                  pWindow->context.vec4param[0] = glm::vec4(worldDir, 1.0f);
-                                                              }
-                                                          },
+                                                          nullptr,
 
                                                           // ScrollCallback
                                                           [](cg::ManagedWindow *pWindow, double xoffset, double yoffset, int mods)
@@ -1351,8 +1345,24 @@ Subwindows:
                                                                   pWindow->passes[1].cameras[0].onCursor(xoffset, yoffset);
                                                           },
 
-                                                          // MouseclickCallback (A11 new)
-                                                          nullptr,
+                                                          // MouseclickCallback - place portal on clean click
+                                                          [](cg::ManagedWindow *pWindow, int xpos, int ypos)
+                                                          {
+                                                              auto &cam = pWindow->passes[1].cameras[0];
+                                                              float aspect = static_cast<float>(pWindow->width) / std::max(static_cast<float>(pWindow->height), 1.0f);
+                                                              glm::mat4 Vinv = glm::inverse(cam.getLookAt());
+                                                              glm::mat4 Pinv = glm::inverse(cam.getPerspective(aspect));
+                                                              float ndcX = (2.0f * xpos / pWindow->width) - 1.0f;
+                                                              float ndcY = 1.0f - (2.0f * ypos / pWindow->height);
+                                                              glm::vec4 clipDir = glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
+                                                              glm::vec4 viewDir = Pinv * clipDir;
+                                                              viewDir = glm::vec4(viewDir.x, viewDir.y, -1.0f, 0.0f);
+                                                              glm::vec3 worldDir = glm::normalize(glm::vec3(Vinv * viewDir));
+                                                              glm::vec3 cameraPos = cam.getPosition();
+                                                              const float portalDistance = 50.0f;
+                                                              glm::vec3 portalPos = cameraPos + worldDir * portalDistance;
+                                                              pWindow->context.vec4param[0] = glm::vec4(portalPos, 1.0f);
+                                                          },
 
                                                           // MousedoubleclickCallback (A11 new)
                                                           openSubwindowInNewWindow},

@@ -13,7 +13,7 @@ R"(
 #version 420
 
 uniform vec2 iResolution;
-uniform vec3 PortalDir;  // normalized direction from camera to portal
+uniform vec3 PortalPos;  // portal center in world space
 uniform mat4 SkyV;
 uniform mat4 SkyP;
 uniform float PortalRadius; // screen-space radius in NDC (0..1 range)
@@ -24,16 +24,17 @@ layout(location = 0) out vec4 FragColor;
 
 void main()
 {
-    // Project the portal direction as a point far along that ray
-    // Using view matrix: the dir in view space gives us clip coords
-    vec3 viewDir = mat3(SkyV) * PortalDir;
+    // Transform the fixed portal world position to view space.
+    // Because SkyV includes camera translation, moving the player in world space
+    // changes the projected center and depth of the portal as expected.
+    vec4 viewPos = SkyV * vec4(PortalPos, 1.0);
 
     // If portal is behind camera, discard
-    if (viewDir.z > 0.0)
+    if (viewPos.z >= 0.0)
         discard;
 
-    // Project to clip space using a point along the direction
-    vec4 clipPos = SkyP * vec4(viewDir * 100.0, 1.0);
+    // Project to clip space
+    vec4 clipPos = SkyP * viewPos;
     vec2 ndcPos = clipPos.xy / clipPos.w;
     vec2 screenCenter = ndcPos * 0.5 + 0.5;
 
@@ -46,7 +47,10 @@ void main()
 
     float dist = length(diff);
 
-    float radius = PortalRadius;
+    // Scale radius with depth so the portal grows when you walk toward it and
+    // shrinks when you walk away from its fixed world-space position.
+    // PortalRadius is defined for the reference placement distance of 50 world units.
+    float radius = PortalRadius * 50.0 / max(-viewPos.z, 0.01);
     if (dist >= radius)
         discard;
 
