@@ -298,7 +298,24 @@ Subwindows:
                                                       [](cg::ManagedWindow *pWindow, int focused)
                                                       {
                                                           if (focused)
-                                                              std::cout << "Subwindow 1 (Assignment 1 - Tabs) focused. Tab: " << (pWindow->context.intparam[0] + 1) << std::endl;
+                                                          {
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Assignment 1 - Tabs" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Animated visual effects with three switchable tabs:" << std::endl;
+                                                              std::cout << "  Tab 1: Animated checkerboard pattern" << std::endl;
+                                                              std::cout << "  Tab 2: Colorful animated circles" << std::endl;
+                                                              std::cout << "  Tab 3: Mandelbrot fractal animation" << std::endl;
+                                                              std::cout << "Current tab: " << (pWindow->context.intparam[0] + 1) << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "  Tab key:     Cycle to next tab" << std::endl;
+                                                              std::cout << "  Left click:  Click a dot at the bottom to select tab" << std::endl;
+                                                              std::cout << "  Mouse move:  Interactive shader effects" << std::endl;
+                                                              std::cout << "  Dbl-click:   Open in a new window" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
                                                       },
 
                                                       // InitCallback
@@ -392,7 +409,21 @@ Subwindows:
                                                       [](cg::ManagedWindow *pWindow, int focused)
                                                       {
                                                           if (focused)
-                                                              std::cout << "Subwindow 2 (Assignment 2 - Ray Casting) focused" << std::endl;
+                                                          {
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Assignment 2 - Ray Casting" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "First-person ray-cast renderer inside a 9x9 map." << std::endl;
+                                                              std::cout << "Walls are colored by type; fog fades the distance." << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "  W / S:       Move forward / backward" << std::endl;
+                                                              std::cout << "  A / D:       Strafe left / right" << std::endl;
+                                                              std::cout << "  Left drag:   Look left / right" << std::endl;
+                                                              std::cout << "  Dbl-click:   Open in a new window" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
                                                       },
 
                                                       // InitCallback
@@ -512,7 +543,21 @@ Subwindows:
                                                       [](cg::ManagedWindow *pWindow, int focused)
                                                       {
                                                           if (focused)
-                                                              std::cout << "Subwindow 3 (Assignment 3 - Ray Tracing) focused" << std::endl;
+                                                          {
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Assignment 3 - Ray Tracing" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Ray-traced Earth, Moon and Sun system with:" << std::endl;
+                                                              std::cout << "  - Phong shading and shadow rays" << std::endl;
+                                                              std::cout << "  - Reflective/refractive materials" << std::endl;
+                                                              std::cout << "  - Animated orbital motion" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "  (View only - fully animated)" << std::endl;
+                                                              std::cout << "  Dbl-click:   Open in a new window" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
                                                       },
 
                                                       // InitCallback
@@ -576,7 +621,24 @@ Subwindows:
                                                       [](cg::ManagedWindow *pWindow, int focused)
                                                       {
                                                           if (focused)
-                                                              std::cout << "Subwindow 4 (Assignment 4 - Blinn-Phong) focused" << std::endl;
+                                                          {
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Assignment 4 - Blinn-Phong Shading" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "3D scene with Blinn-Phong lighting model:" << std::endl;
+                                                              std::cout << "  - Sphere (pulsing scale), Cube (rotating)," << std::endl;
+                                                              std::cout << "    Torus (spinning), Teapot (orbiting)" << std::endl;
+                                                              std::cout << "  - Reflective floor plane" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "  Left drag:        Orbit camera" << std::endl;
+                                                              std::cout << "  Scroll:           Zoom camera" << std::endl;
+                                                              std::cout << "  Shift + drag:     Orbit light" << std::endl;
+                                                              std::cout << "  Shift + scroll:   Zoom light distance" << std::endl;
+                                                              std::cout << "  Dbl-click:        Open in a new window" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
                                                       },
 
                                                       // InitCallback
@@ -705,7 +767,22 @@ Subwindows:
                                                       [](cg::ManagedWindow *pWindow, int focused)
                                                       {
                                                           if (focused)
-                                                              std::cout << "Subwindow 5 (Assignment 5 - Environment Mapping) focused" << std::endl;
+                                                          {
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Assignment 5 - Environment Mapping" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Cubemap-based environment reflections & refraction:" << std::endl;
+                                                              std::cout << "  - Night sky cubemap skybox" << std::endl;
+                                                              std::cout << "  - Sphere, Cube, Torus, Teapot with reflection/refraction" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "  1 / 2 / 3 / 4:  Switch object (sphere/cube/torus/teapot)" << std::endl;
+                                                              std::cout << "  Left drag:      Orbit camera" << std::endl;
+                                                              std::cout << "  Scroll:         Zoom camera" << std::endl;
+                                                              std::cout << "  Dbl-click:      Open in a new window" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
                                                       },
 
                                                       // InitCallback
@@ -836,7 +913,26 @@ Subwindows:
                                                       [](cg::ManagedWindow *pWindow, int focused)
                                                       {
                                                           if (focused)
-                                                              std::cout << "Subwindow 6 (Assignment 8 - Unified Rendering) focused" << std::endl;
+                                                          {
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Assignment 8 - Unified Rendering" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Unified shader supporting multiple material types:" << std::endl;
+                                                              std::cout << "  - PBR/Phong, Checkerboard, Cartoon, Discard" << std::endl;
+                                                              std::cout << "  - Night sky cubemap with distance fog" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "  O:                Switch to orbiting camera" << std::endl;
+                                                              std::cout << "  W:                Switch to walking camera" << std::endl;
+                                                              std::cout << "  Left drag:        Orbit / walk camera" << std::endl;
+                                                              std::cout << "  Scroll:           Zoom / move forward" << std::endl;
+                                                              std::cout << "  Shift + drag:     Orbit light" << std::endl;
+                                                              std::cout << "  Shift + scroll:   Move light distance" << std::endl;
+                                                              std::cout << "  Alt + scroll:     Adjust fog far distance" << std::endl;
+                                                              std::cout << "  Dbl-click:        Open in a new window" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
                                                       },
 
                                                       // InitCallback
@@ -1035,7 +1131,29 @@ Subwindows:
                                                       [](cg::ManagedWindow *pWindow, int focused)
                                                       {
                                                           if (focused)
-                                                              std::cout << "Subwindow 7 (Assignment 9 - Cel-Shading) focused" << std::endl;
+                                                          {
+                                                              std::cout << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "Assignment 9 - Cel-Shading Pipeline" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                              std::cout << "6-pass cel/cartoon shading pipeline:" << std::endl;
+                                                              std::cout << "  Pass 0: Blinn-Phong scene to FBO" << std::endl;
+                                                              std::cout << "  Pass 1-2: Gaussian blur (vertical + horizontal)" << std::endl;
+                                                              std::cout << "  Pass 3: Sobel edge detection" << std::endl;
+                                                              std::cout << "  Pass 4: Quantized cartoon shading" << std::endl;
+                                                              std::cout << "  Pass 5: Composite (cartoon + edges)" << std::endl;
+                                                              std::cout << std::endl;
+                                                              std::cout << "CONTROLS:" << std::endl;
+                                                              std::cout << "  1 / 2:          Blur edges ON / OFF" << std::endl;
+                                                              std::cout << "  3 / 4:          White / dark background" << std::endl;
+                                                              std::cout << "  Left drag:      Orbit camera" << std::endl;
+                                                              std::cout << "  Scroll:         Zoom camera" << std::endl;
+                                                              std::cout << "  Shift + drag:   Orbit light" << std::endl;
+                                                              std::cout << "  Alt + scroll:   Adjust edge threshold" << std::endl;
+                                                              std::cout << "  Ctrl + scroll:  Adjust edge overlay alpha" << std::endl;
+                                                              std::cout << "  Dbl-click:      Open in a new window" << std::endl;
+                                                              std::cout << "========================================" << std::endl;
+                                                          }
                                                       },
 
                                                       // InitCallback
