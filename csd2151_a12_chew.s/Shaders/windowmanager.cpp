@@ -180,7 +180,7 @@ namespace
             const int c = viewportIndex % COL;
 
             const int widthPerCol = (W - (COL + 1) * GAP) / COL;
-            const int heightPerRow = (H - 40 - (ROW + 1) * GAP) / ROW;
+            const int heightPerRow = (H - (ROW + 1) * GAP) / ROW;
 
             x = (c + 1) * GAP + c * widthPerCol;
             y = (r + 1) * GAP + r * heightPerRow;
@@ -400,6 +400,7 @@ namespace cg
                 // Set window to fullscreen on current monitor
                 glfwSetWindowMonitor(pWindow, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
                 pManagedWindow->context.window.isFullscreen = true;
+                WindowManager::getInstance().resizeChildren(pWindow, mode->width, mode->height);
             }
             else
             {
@@ -408,6 +409,10 @@ namespace cg
                     pManagedWindow->context.window.x, pManagedWindow->context.window.y,
                     pManagedWindow->context.window.width, pManagedWindow->context.window.height, 0);
                 pManagedWindow->context.window.isFullscreen = false;
+                WindowManager::getInstance().resizeChildren(
+                    pWindow,
+                    pManagedWindow->context.window.width,
+                    pManagedWindow->context.window.height);
             }
         }
     }
@@ -627,6 +632,8 @@ namespace cg
                 // Size the passes
                 for (auto& pass : pManagedWindow->passes)
                     xywh(pass.viewport, width, height, pass.x, pass.y, pass.width, pass.height);
+
+                WindowManager::getInstance().resizeChildren(pWindow, width, height);
 
                 if (pManagedWindow->sizeCallback)
                 {

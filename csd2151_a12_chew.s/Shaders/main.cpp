@@ -115,6 +115,15 @@ bool canMoveTo(float x, float y)
 // Global storage for child windows
 std::vector<GLFWwindow *> subwindows;
 
+namespace
+{
+    void openSubwindowInNewWindow(cg::ManagedWindow* pWindow, int, int)
+    {
+        if (pWindow && pWindow->pParentWindow)
+            cg::WindowManager::getInstance().copyWindow(*pWindow);
+    }
+}
+
 // ============================================================================
 // MAKE_OGRE_OBJECT(meshName, xSize, ySize, spacing)
 //   Expands to a cg::Object whose instances form an xSize x ySize grid
@@ -351,7 +360,7 @@ Subwindows:
                                                       nullptr,
 
                                                       // MousedoubleclickCallback (A11 new)
-                                                      nullptr},
+                                                      openSubwindowInNewWindow},
                                                      pMainWindow));
 
         // ====================================================================
@@ -471,7 +480,7 @@ Subwindows:
                                                       nullptr,
 
                                                       // MousedoubleclickCallback (A11 new)
-                                                      nullptr},
+                                                      openSubwindowInNewWindow},
                                                      pMainWindow));
 
         // ====================================================================
@@ -528,7 +537,7 @@ Subwindows:
                                                       nullptr,
 
                                                       // MousedoubleclickCallback (A11 new)
-                                                      nullptr},
+                                                      openSubwindowInNewWindow},
                                                      pMainWindow));
 
         // ====================================================================
@@ -651,7 +660,7 @@ Subwindows:
                                                       nullptr,
 
                                                       // MousedoubleclickCallback (A11 new)
-                                                      nullptr},
+                                                      openSubwindowInNewWindow},
                                                      pMainWindow));
 
         // ====================================================================
@@ -776,7 +785,7 @@ Subwindows:
                                                       nullptr,
 
                                                       // MousedoubleclickCallback (A11 new)
-                                                      nullptr},
+                                                      openSubwindowInNewWindow},
                                                      pMainWindow));
 
         // ====================================================================
@@ -929,7 +938,7 @@ Subwindows:
                                                       nullptr,
 
                                                       // MousedoubleclickCallback (A11 new)
-                                                      nullptr},
+                                                      openSubwindowInNewWindow},
                                                      pMainWindow));
 
         // ====================================================================
@@ -1196,7 +1205,7 @@ Subwindows:
                                                       nullptr,
 
                                                       // MousedoubleclickCallback (A11 new)
-                                                      nullptr},
+                                                      openSubwindowInNewWindow},
                                                      pMainWindow));
 
         // ====================================================================
@@ -1346,7 +1355,7 @@ Subwindows:
                                                           nullptr,
 
                                                           // MousedoubleclickCallback (A11 new)
-                                                          nullptr},
+                                                          openSubwindowInNewWindow},
                                                          pMainWindow));
         }
 
@@ -1569,7 +1578,7 @@ Subwindows:
                                      nullptr,
 
                                                       // MousedoubleclickCallback (A11 new)
-                                                      nullptr},
+                                                      openSubwindowInNewWindow},
                                                      pMainWindow));
 
         // Initialize ray casting camera to center of map
