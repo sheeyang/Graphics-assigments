@@ -27,10 +27,10 @@
 
 const int NOMARGIN = 0; // To set no margin for a window
 
-// Grid configuration for menu (4 columns x 3 rows = 12 max)
-const int GRID_COLS = 4;
+// Grid configuration for menu (3 columns x 3 rows = 9 max)
+const int GRID_COLS = 3;
 const int GRID_ROWS = 3;
-const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 12 subwindows max
+const int GRID_SIZE = GRID_COLS * GRID_ROWS; // 9 subwindows max
 const int GRID_GAP = 10;
 
 // Number of active subwindows
