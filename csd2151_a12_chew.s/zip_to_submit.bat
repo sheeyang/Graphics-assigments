@@ -1,7 +1,7 @@
 REM Instruction
 REM    Copy the batch file into the folder where your project folder (e.g., csd2151_a1_...) is located.
 REM    The first time you open the file, edit the line:
-REM    set "BASENAME=csd2151_a5_david.tan"
+REM    set "BASENAME=csd2151_a12_chew.s"
 REM    Replace the value with your actual project folder name.
 REM    Save the file, run it, confirm the content of created file, and then submit.
 
@@ -9,7 +9,7 @@ REM    Save the file, run it, confirm the content of created file, and then subm
 setlocal enabledelayedexpansion
 
 REM === Configuration ===
-set "BASENAME=csd2151_a5_david.tan"
+set "BASENAME=csd2151_a12_chew.s"
 set "SRC_DIR=%~dp0%BASENAME%"
 
 REM Validate source folder exists
