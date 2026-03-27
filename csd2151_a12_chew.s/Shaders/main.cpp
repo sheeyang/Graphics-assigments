@@ -229,7 +229,7 @@ Subwindows:
    - Subwindow 6: Assignment 8 (Unified Rendering) - PBR, Cartoon, Discard, Fog
    - Subwindow 7: Assignment 9 (Cel-Shading) - 6-pass cel-shading pipeline
    - Subwindow 8: Assignment 10 (Portal) - Skybox with projected portal texture
-    - Subwindow 9: Assignment 11 (Deferred Shading + Normal Mapping) - Ogres grid
+   - Subwindow 9: Assignment 11 (Deferred Shading + Normal Mapping) - Ogres grid
 )";
                                                    }
                                                },
