@@ -128,7 +128,7 @@ namespace cg
         }
         else if (cameraType == CameraType::WALKING)
         {
-            // Walk forward/backward in world space along the current view direction.
+            // Walk forward/backward in full world space along the current view direction.
             const glm::vec3 forward = glm::normalize(target - position);
             const glm::vec3 velocity = yoffset > 0.0f ? forward : -forward;
             position += velocity;
