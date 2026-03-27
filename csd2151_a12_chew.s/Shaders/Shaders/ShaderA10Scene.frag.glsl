@@ -4,7 +4,7 @@ R"(
 \author Chew Shee Yang (chew.s@digipen.edu)
 \par Course: CSD2151
 \par Assignment: 10 (Portal with Skybox)
-\date 03/10/2026 (MM/DD/YYYY)
+\date 03/28/2026 (MM/DD/YYYY)
 \brief
     Fragment shader for Assignment 10 - Screen-space portal overlay.
     Projects portal direction to screen space, draws a fixed-size portal
