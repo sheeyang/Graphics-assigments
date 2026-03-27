@@ -4,7 +4,7 @@ R"(
 \author Chew Shee Yang (chew.s@digipen.edu)
 \par Course: CSD2151
 \par Assignment: 10 (Portal with Skybox)
-\date 03/28/2026 (MM/DD/YYYY)
+\date 03/10/2026 (MM/DD/YYYY)
 \brief
     Vertex shader for Assignment 10 - Pisa HDR cubebox rendering.
     Uses the full view matrix so the cubemap is rendered on a finite
