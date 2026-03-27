@@ -14,9 +14,10 @@ R"(
 
 uniform vec2 iResolution;
 uniform vec3 PortalPos;  // portal center in world space
+uniform vec3 PortalNormal; // fixed portal facing direction in world space
 uniform mat4 SkyV;
 uniform mat4 SkyP;
-uniform float PortalRadius; // screen-space radius in NDC (0..1 range)
+uniform float PortalRadius; // portal radius in world units
 
 layout(binding = 1) uniform sampler2D PortalTexture;
 
@@ -24,42 +25,47 @@ layout(location = 0) out vec4 FragColor;
 
 void main()
 {
-    // Transform the fixed portal world position to view space.
-    // Because SkyV includes camera translation, moving the player in world space
-    // changes the projected center and depth of the portal as expected.
-    vec4 viewPos = SkyV * vec4(PortalPos, 1.0);
-
-    // If portal is behind camera, discard
-    if (viewPos.z >= 0.0)
-        discard;
-
-    // Project to clip space
-    vec4 clipPos = SkyP * viewPos;
-    vec2 ndcPos = clipPos.xy / clipPos.w;
-    vec2 screenCenter = ndcPos * 0.5 + 0.5;
-
-    // Current fragment in screen UV
     vec2 uv = gl_FragCoord.xy / iResolution;
+    vec2 ndc = uv * 2.0 - 1.0;
 
-    // Distance from fragment to portal center, aspect-corrected
-    vec2 diff = uv - screenCenter;
-    diff.x *= iResolution.x / iResolution.y;
+    mat4 invP = inverse(SkyP);
+    mat4 invV = inverse(SkyV);
 
-    float dist = length(diff);
+    vec4 clipPos = vec4(ndc, -1.0, 1.0);
+    vec4 viewRay = invP * clipPos;
+    viewRay = vec4(viewRay.xy, -1.0, 0.0);
 
-    // Scale radius with depth so the portal grows when you walk toward it and
-    // shrinks when you walk away from its fixed world-space position.
-    // PortalRadius is defined for the reference placement distance of 50 world units.
-    float radius = PortalRadius * 50.0 / max(-viewPos.z, 0.01);
-    if (dist >= radius)
+    vec3 rayOrigin = vec3(invV * vec4(0.0, 0.0, 0.0, 1.0));
+    vec3 rayDir = normalize(vec3(invV * viewRay));
+
+    vec3 normal = normalize(PortalNormal);
+    float denom = dot(rayDir, normal);
+    if (abs(denom) < 1e-4)
         discard;
 
-    // Map to portal texture UV
-    vec2 portalUV = (diff / radius) * 0.5 + 0.5;
+    float t = dot(PortalPos - rayOrigin, normal) / denom;
+    if (t <= 0.0)
+        discard;
+
+    vec3 hitPos = rayOrigin + rayDir * t;
+
+    // Build a stable local basis for the portal plane.
+    vec3 refUp = abs(dot(normal, vec3(0.0, 1.0, 0.0))) > 0.98 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+    vec3 portalRight = normalize(cross(refUp, normal));
+    vec3 portalUp = normalize(cross(normal, portalRight));
+
+    vec3 local = hitPos - PortalPos;
+    vec2 planeUV = vec2(dot(local, portalRight), dot(local, portalUp));
+
+    if (dot(planeUV, planeUV) >= PortalRadius * PortalRadius)
+        discard;
+
+    vec2 portalUV = planeUV / (PortalRadius * 2.0) + 0.5;
     vec4 portalColor = texture(PortalTexture, portalUV);
 
     // Smooth edge fade
-    float fade = smoothstep(radius, radius * 0.75, dist);
+    float radialDist = length(planeUV);
+    float fade = 1.0 - smoothstep(PortalRadius * 0.75, PortalRadius, radialDist);
 
     FragColor = vec4(portalColor.rgb, portalColor.a * fade);
 }

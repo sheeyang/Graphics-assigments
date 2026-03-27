@@ -128,10 +128,11 @@ namespace cg
         }
         else if (cameraType == CameraType::WALKING)
         {
-            // Adjust position and target based on scroll input for walking
-            const glm::vec3 velocity = glm::normalize(yoffset > 0.0f ? target - position : position - target);
-            position += velocity * glm::vec3(1.0f, 0.0f, 1.0f);
-            target += velocity * glm::vec3(1.0f, 0.0f, 1.0f);
+            // Walk forward/backward in world space along the current view direction.
+            const glm::vec3 forward = glm::normalize(target - position);
+            const glm::vec3 velocity = yoffset > 0.0f ? forward : -forward;
+            position += velocity;
+            target += velocity;
         }
     }
 }

@@ -1217,12 +1217,12 @@ Subwindows:
                                                           {7, GRID_SIZE, GRID_GAP},
                                                           "Assignment 10 - Portal",
                                                           BLACK,
-                                                          {{"../NightSky/night_posx.png",
-                                                            "../NightSky/night_negx.png",
-                                                            "../NightSky/night_posy.png",
-                                                            "../NightSky/night_negy.png",
-                                                            "../NightSky/night_posz.png",
-                                                            "../NightSky/night_negz.png"}},
+                                                                                                                    {{"../Pisa/pisa_posx.hdr",
+                                                                                                                        "../Pisa/pisa_negx.hdr",
+                                                                                                                        "../Pisa/pisa_posy.hdr",
+                                                                                                                        "../Pisa/pisa_negy.hdr",
+                                                                                                                        "../Pisa/pisa_posz.hdr",
+                                                                                                                        "../Pisa/pisa_negz.hdr"}},
                                                           NONE,
                                                           {
                                                            {  // Pass 0 - Portal texture to FBO
@@ -1274,6 +1274,7 @@ Subwindows:
                                                                   std::cout << "========================================" << std::endl;
                                                                   std::cout << "Assignment 10 - Portal with Skybox" << std::endl;
                                                                   std::cout << "========================================" << std::endl;
+                                                                  std::cout << "Skybox: Pisa HDR cubemap" << std::endl;
                                                                   std::cout << "CONTROLS:" << std::endl;
                                                                   std::cout << "  Left drag:   Rotate/move walking camera" << std::endl;
                                                                   std::cout << "  Scroll:      Move forward/backward" << std::endl;
@@ -1288,8 +1289,12 @@ Subwindows:
                                                               if (pass == -1)
                                                               {
                                                                   pWindow->passes[1].cameras[0].setType(cg::CameraType::WALKING);
-                                                                  pWindow->context.vec4param[0] = glm::vec4(0.0f, 1.0f, -46.0f, 1.0f);
-                                                                  pWindow->context.floatparam[0] = 0.2f;
+                                                                  auto &cam = pWindow->passes[1].cameras[0];
+                                                                  glm::vec3 initialPortalPos(0.0f, 1.0f, -46.0f);
+                                                                  glm::vec3 initialPortalNormal = glm::normalize(cam.getPosition() - initialPortalPos);
+                                                                  pWindow->context.vec4param[0] = glm::vec4(initialPortalPos, 1.0f);
+                                                                  pWindow->context.vec4param[1] = glm::vec4(initialPortalNormal, 0.0f);
+                                                                  pWindow->context.floatparam[0] = 4.0f;
                                                                   pWindow->passes[0].fbo = cg::FBO(cg::FBO::Texture, GL_TEXTURE1, &pWindow->context.gluintparam[0]);
                                                               }
                                                               if (pass == 0)
@@ -1307,7 +1312,9 @@ Subwindows:
                                                                   glBindTexture(GL_TEXTURE_2D, pWindow->context.gluintparam[0]);
                                                                   pWindow->passes[2].renderShader.use();
                                                                   glm::vec3 portalPos = glm::vec3(pWindow->context.vec4param[0]);
+                                                                  glm::vec3 portalNormal = glm::normalize(glm::vec3(pWindow->context.vec4param[1]));
                                                                   pWindow->passes[2].renderShader.setUniform("PortalPos", portalPos);
+                                                                  pWindow->passes[2].renderShader.setUniform("PortalNormal", portalNormal);
                                                                   pWindow->passes[2].renderShader.setUniform("PortalRadius", pWindow->context.floatparam[0]);
                                                                   auto &cam = pWindow->passes[1].cameras[0];
                                                                   float aspect = pWindow->width > 0 && pWindow->height > 0
@@ -1361,7 +1368,9 @@ Subwindows:
                                                               glm::vec3 cameraPos = cam.getPosition();
                                                               const float portalDistance = 50.0f;
                                                               glm::vec3 portalPos = cameraPos + worldDir * portalDistance;
+                                                              glm::vec3 portalNormal = -worldDir;
                                                               pWindow->context.vec4param[0] = glm::vec4(portalPos, 1.0f);
+                                                              pWindow->context.vec4param[1] = glm::vec4(portalNormal, 0.0f);
                                                           },
 
                                                           // MousedoubleclickCallback (A11 new)
